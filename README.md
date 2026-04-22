@@ -20,7 +20,7 @@ The probes implement the methodology published at [korrel-dev/mcp-audits](https:
 
 ## Status
 
-Early development. The discovery probe lands first; the other five follow on a weekly cadence aligned with the public audit series at [korrel-dev/mcp-audits](https://github.com/korrel-dev/mcp-audits).
+Early development. Probes 1-3 ship (probe 3 scaffolded); probes 4-7 land on a weekly cadence aligned with the public audit series at [korrel-dev/mcp-audits](https://github.com/korrel-dev/mcp-audits). Per-probe status in [`docs/ROADMAP.md`](./docs/ROADMAP.md).
 
 ## Install
 
