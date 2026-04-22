@@ -32,6 +32,7 @@ export async function runAudit(target: string, outputRoot: string): Promise<void
 
   let ctx: AuditContext = { target: url };
   const findings: Finding[] = [];
+  const evidenceNames = new Set<string>();
 
   for (const probe of probes) {
     try {
@@ -39,6 +40,7 @@ export async function runAudit(target: string, outputRoot: string): Promise<void
       findings.push(...result.findings);
       for (const item of result.evidence) {
         await writeEvidence(evidenceDir, item.name, item.evidence);
+        evidenceNames.add(item.name);
       }
       if (result.contextUpdates) {
         ctx = { ...ctx, ...result.contextUpdates };
@@ -57,7 +59,7 @@ export async function runAudit(target: string, outputRoot: string): Promise<void
     }
   }
 
-  await writeReport(outputDir, { target: url.toString(), findings });
+  await writeReport(outputDir, { target: url.toString(), findings, evidenceNames });
 
   console.log(`[korrel] done. report: ${join(outputDir, 'report.md')}`);
 }
