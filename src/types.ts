@@ -28,14 +28,14 @@ export interface Finding {
 }
 
 import type { Prm } from './probes/prm.js';
+import type { AsMetadata } from './probes/as-metadata.js';
 
 export interface AuditContext {
   target: URL;
   protectedResourceMetadataUrl?: string;
   protectedResourceMetadata?: Prm;
   authorizationServers?: string[];
-  // TODO: type after probe 3 defines schema
-  authorizationServerMetadata?: unknown;
+  authorizationServerMetadata?: AsMetadata;
   registrationEndpoint?: string;
   tokenEndpoint?: string;
   authorizationEndpoint?: string;
