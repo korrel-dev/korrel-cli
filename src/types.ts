@@ -26,3 +26,30 @@ export interface Finding {
   passed: boolean;
   observations: string[];
 }
+
+export interface AuditContext {
+  target: URL;
+  protectedResourceMetadataUrl?: string;
+  // TODO: type after probe 2 defines schema
+  protectedResourceMetadata?: unknown;
+  authorizationServers?: string[];
+  // TODO: type after probe 3 defines schema
+  authorizationServerMetadata?: unknown;
+  registrationEndpoint?: string;
+  tokenEndpoint?: string;
+  authorizationEndpoint?: string;
+  registeredClient?: unknown;
+}
+
+export interface NamedEvidence {
+  name: string;
+  evidence: Evidence;
+}
+
+export interface ProbeResult {
+  findings: Finding[];
+  evidence: NamedEvidence[];
+  contextUpdates?: Partial<AuditContext>;
+}
+
+export type Probe = (ctx: AuditContext) => Promise<ProbeResult>;

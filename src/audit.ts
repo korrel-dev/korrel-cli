@@ -1,9 +1,19 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { discoveryProbe } from './probes/discovery.js';
+import { DISCOVERY_PROBE_ID, discoveryProbe } from './probes/discovery.js';
 import { writeEvidence } from './evidence.js';
 import { writeReport } from './report.js';
-import type { Finding } from './types.js';
+import type { AuditContext, Finding, Probe } from './types.js';
+
+interface ProbeEntry {
+  id: string;
+  run: Probe;
+}
+
+const probes: ProbeEntry[] = [
+  { id: DISCOVERY_PROBE_ID, run: discoveryProbe }
+  // Probes 2-6 land next.
+];
 
 export async function runAudit(target: string, outputRoot: string): Promise<void> {
   const url = new URL(target);
@@ -16,14 +26,32 @@ export async function runAudit(target: string, outputRoot: string): Promise<void
   console.log(`[korrel] auditing ${url.toString()}`);
   console.log(`[korrel] output: ${outputDir}`);
 
+  let ctx: AuditContext = { target: url };
   const findings: Finding[] = [];
 
-  // Probe 1: discovery (RFC 9728).
-  const discovery = await discoveryProbe(url);
-  await writeEvidence(evidenceDir, '01-discovery', discovery.evidence);
-  findings.push(discovery.finding);
-
-  // Probes 2-6 land next.
+  for (const probe of probes) {
+    try {
+      const result = await probe.run(ctx);
+      findings.push(...result.findings);
+      for (const item of result.evidence) {
+        await writeEvidence(evidenceDir, item.name, item.evidence);
+      }
+      if (result.contextUpdates) {
+        ctx = { ...ctx, ...result.contextUpdates };
+      }
+    } catch (err) {
+      // Fail-soft: a probe that throws becomes an 'issue' finding and
+      // the audit continues. No probe can halt the run.
+      const message = err instanceof Error ? err.message : String(err);
+      findings.push({
+        id: probe.id,
+        title: `${probe.id} threw`,
+        severity: 'issue',
+        passed: false,
+        observations: [message]
+      });
+    }
+  }
 
   await writeReport(outputDir, { target: url.toString(), findings });
 

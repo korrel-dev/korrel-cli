@@ -1,4 +1,6 @@
-import type { Evidence, Finding } from '../types.js';
+import type { AuditContext, Evidence, Finding, ProbeResult } from '../types.js';
+
+export const DISCOVERY_PROBE_ID = '01-discovery';
 
 const MCP_INITIALIZE_BODY = {
   jsonrpc: '2.0' as const,
@@ -14,11 +16,6 @@ const MCP_INITIALIZE_BODY = {
   }
 };
 
-export interface DiscoveryResult {
-  finding: Finding;
-  evidence: Evidence;
-}
-
 /**
  * Probe 1: Discovery.
  *
@@ -29,7 +26,7 @@ export interface DiscoveryResult {
  * Per RFC 9728 (OAuth 2.0 Protected Resource Metadata) and the MCP
  * auth spec (2025-06-18 onwards).
  */
-export async function discoveryProbe(target: URL): Promise<DiscoveryResult> {
+export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json, text/event-stream',
@@ -37,7 +34,7 @@ export async function discoveryProbe(target: URL): Promise<DiscoveryResult> {
   };
   const body = JSON.stringify(MCP_INITIALIZE_BODY);
 
-  const response = await fetch(target, {
+  const response = await fetch(ctx.target, {
     method: 'POST',
     headers: requestHeaders,
     body,
@@ -53,7 +50,7 @@ export async function discoveryProbe(target: URL): Promise<DiscoveryResult> {
   const evidence: Evidence = {
     request: {
       method: 'POST',
-      url: target.toString(),
+      url: ctx.target.toString(),
       headers: requestHeaders,
       body
     },
@@ -84,14 +81,21 @@ export async function discoveryProbe(target: URL): Promise<DiscoveryResult> {
   const passed = response.status === 401 && prmUrl !== null;
 
   const finding: Finding = {
-    id: '01-discovery',
+    id: DISCOVERY_PROBE_ID,
     title: 'Discovery probe (RFC 9728)',
     severity: passed ? 'info' : 'finding',
     passed,
     observations
   };
 
-  return { finding, evidence };
+  const result: ProbeResult = {
+    findings: [finding],
+    evidence: [{ name: DISCOVERY_PROBE_ID, evidence }]
+  };
+  if (prmUrl) {
+    result.contextUpdates = { protectedResourceMetadataUrl: prmUrl };
+  }
+  return result;
 }
 
 function extractResourceMetadata(wwwAuthenticate: string): string | null {
