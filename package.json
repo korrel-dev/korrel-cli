@@ -1,0 +1,50 @@
+{
+  "name": "@korrel-dev/cli",
+  "version": "0.0.0",
+  "description": "CLI that audits MCP servers for OAuth 2.1 and spec compliance.",
+  "type": "module",
+  "bin": {
+    "korrel": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "oauth",
+    "oauth2",
+    "security",
+    "audit",
+    "compliance"
+  ],
+  "author": "Issa Zangana",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/korrel-dev/korrel-cli"
+  },
+  "homepage": "https://korrel.dev",
+  "bugs": "https://github.com/korrel-dev/korrel-cli/issues",
+  "dependencies": {
+    "commander": "^14.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.0"
+  }
+}

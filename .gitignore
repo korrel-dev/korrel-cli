@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.env
+.env.local
+.DS_Store
+
+# Local audit outputs (published audits live in korrel-dev/mcp-audits)
+audits/
