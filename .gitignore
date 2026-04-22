@@ -7,3 +7,6 @@ dist/
 
 # Local audit outputs (published audits live in korrel-dev/mcp-audits)
 audits/
+
+# Pre-disclosure findings (see coordinated-disclosure protocol)
+PRIVATE-NOTES.md

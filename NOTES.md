@@ -20,24 +20,12 @@ unauthenticated request, which RFC 6750 §3.1 reserves for
 malformed requests (missing parameters, duplicate tokens). The
 spec-correct value is `invalid_token`. GitHub is the only one of
 the four that gets this wrong. PRM is the only one of the four
-that populates `scopes_supported`.
+that populates `scopes_supported`. Disclosure sent to
+`security@github.com` on 2026-04-20; publish scheduled for
+2026-04-27.
 
-**Linear** — clean. `invalid_token`, PRM resolves at
-`/.well-known/oauth-protected-resource`, AS metadata resolves at
-`/.well-known/oauth-authorization-server`. PRM omits
-`scopes_supported`, `resource_documentation`, and
-`resource_signing_alg_values_supported` (all recommended, not
-required).
-
-**Notion** — same shape as Linear. Clean across the three probes.
-Same three recommended PRM fields missing.
-
-**Atlassian** — OAuth is present but there is no `resource_metadata`
-parameter on the `WWW-Authenticate` header, so the RFC 9728
-discovery chain does not exist. A spec-following MCP client has
-no way to auto-discover the AS. Probes 2 and 3 correctly cascade
-as skipped. This is the first real exploitable finding surfaced
-by the tool.
+Per-server findings for Linear, Notion, and Atlassian held in
+`PRIVATE-NOTES.md` until coordinated disclosure is complete.
 
 ### Patterns across the four
 
