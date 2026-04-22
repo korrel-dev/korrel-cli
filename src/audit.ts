@@ -1,6 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { DISCOVERY_PROBE_ID, discoveryProbe } from './probes/discovery.js';
+import { PRM_PROBE_ID, prmProbe } from './probes/prm.js';
 import { writeEvidence } from './evidence.js';
 import { writeReport } from './report.js';
 import type { AuditContext, Finding, Probe } from './types.js';
@@ -11,8 +12,9 @@ interface ProbeEntry {
 }
 
 const probes: ProbeEntry[] = [
-  { id: DISCOVERY_PROBE_ID, run: discoveryProbe }
-  // Probes 2-6 land next.
+  { id: DISCOVERY_PROBE_ID, run: discoveryProbe },
+  { id: PRM_PROBE_ID, run: prmProbe }
+  // Probes 3-6 land next.
 ];
 
 export async function runAudit(target: string, outputRoot: string): Promise<void> {

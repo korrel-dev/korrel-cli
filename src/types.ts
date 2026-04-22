@@ -27,11 +27,12 @@ export interface Finding {
   observations: string[];
 }
 
+import type { Prm } from './probes/prm.js';
+
 export interface AuditContext {
   target: URL;
   protectedResourceMetadataUrl?: string;
-  // TODO: type after probe 2 defines schema
-  protectedResourceMetadata?: unknown;
+  protectedResourceMetadata?: Prm;
   authorizationServers?: string[];
   // TODO: type after probe 3 defines schema
   authorizationServerMetadata?: unknown;
