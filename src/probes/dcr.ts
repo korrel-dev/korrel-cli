@@ -153,53 +153,40 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     ? RegistrationSuccessSchema.safeParse(body1Parsed)
     : null;
 
-  if (attempt1.status === 201) {
-    if (body1Validated?.success) {
-      findings.push({
-        id: DCR_PROBE_ID,
-        title: 'DCR valid registration accepted',
-        severity: 'info',
-        passed: true,
-        observations: [
-          `POST returned 201 with client_id=<redacted>.`
-        ]
-      });
-      contextUpdates = { registeredClient: body1Validated.data };
-    } else {
-      findings.push({
-        id: DCR_PROBE_ID,
-        title: 'DCR valid registration not accepted',
-        severity: 'info',
-        passed: false,
-        observations: [
-          `POST returned HTTP ${attempt1.status}; body: ${bodyExcerpt(attempt1.body)}.`
-        ]
-      });
-    }
+  if (attempt1.status === 201 && body1Validated?.success) {
+    findings.push({
+      id: DCR_PROBE_ID,
+      title: 'DCR valid registration accepted',
+      severity: 'info',
+      passed: true,
+      observations: [
+        `POST returned 201 with client_id=<redacted>.`
+      ]
+    });
+    contextUpdates = { registeredClient: body1Validated.data };
+  } else if (attempt1.status === 200 && body1Validated?.success) {
+    findings.push({
+      id: DCR_PROBE_ID,
+      title: 'DCR registration response uses HTTP 200 instead of 201',
+      severity: 'warn',
+      passed: false,
+      observations: [
+        `POST returned 200 with client_id=<redacted>. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.`
+      ]
+    });
+    contextUpdates = { registeredClient: body1Validated.data };
   } else if (attempt1.status === 200) {
-    if (body1Validated?.success) {
-      findings.push({
-        id: DCR_PROBE_ID,
-        title: 'DCR registration response uses HTTP 200 instead of 201',
-        severity: 'warn',
-        passed: false,
-        observations: [
-          `POST returned 200 with client_id=<redacted>. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.`
-        ]
-      });
-      contextUpdates = { registeredClient: body1Validated.data };
-    } else {
-      findings.push({
-        id: DCR_PROBE_ID,
-        title: 'DCR registration returned 200 but response lacks valid client_id',
-        severity: 'issue',
-        passed: false,
-        observations: [
-          'POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body. Context not populated.'
-        ]
-      });
-    }
+    findings.push({
+      id: DCR_PROBE_ID,
+      title: 'DCR registration returned 200 but response lacks valid client_id',
+      severity: 'issue',
+      passed: false,
+      observations: [
+        'POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body. Context not populated.'
+      ]
+    });
   } else {
+    // Catch-all: covers 201 with invalid body AND any non-201/200 status.
     findings.push({
       id: DCR_PROBE_ID,
       title: 'DCR valid registration not accepted',
