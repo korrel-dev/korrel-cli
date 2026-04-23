@@ -43,7 +43,7 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
     const finding: Finding = {
       id: AS_METADATA_PROBE_ID,
       title: 'Authorization Server metadata (RFC 8414)',
-      severity: 'finding',
+      severity: 'skipped',
       passed: false,
       observations: ['Probe 2 did not discover any authorization_servers; AS metadata fetch skipped.']
     };
@@ -160,7 +160,7 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   const finding: Finding = {
     id: AS_METADATA_PROBE_ID,
     title: 'Authorization Server metadata (RFC 8414)',
-    severity: passed ? 'info' : 'finding',
+    severity: passed ? 'info' : 'warn',
     passed,
     observations
   };

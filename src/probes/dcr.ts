@@ -59,7 +59,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     const skipFinding: Finding = {
       id: DCR_PROBE_ID,
       title: 'DCR/CIMD probe skipped: AS metadata not available',
-      severity: 'info',
+      severity: 'skipped',
       passed: false,
       observations: [
         'Probe 3 did not populate authorizationServerMetadata; probe 4 cannot run.'
@@ -182,7 +182,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       findings.push({
         id: DCR_PROBE_ID,
         title: 'DCR registration response uses HTTP 200 instead of 201',
-        severity: 'finding',
+        severity: 'warn',
         passed: false,
         observations: [
           `POST returned 200 with client_id=${body1Validated.data.client_id}. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.`
@@ -265,7 +265,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     findings.push({
       id: DCR_PROBE_ID,
       title: 'DCR accepted host-mismatched redirect URI',
-      severity: 'finding',
+      severity: 'warn',
       passed: false,
       observations: [
         'POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD reject this (RFC 7591 §5 SHOULD).'

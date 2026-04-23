@@ -21,7 +21,14 @@ export async function writeReport(
 
 function renderMarkdown({ target, findings, evidenceNames }: ReportInput): string {
   const host = new URL(target).host;
-  const passed = findings.filter(f => f.passed).length;
+  // Findings with severity 'skipped' represent probes that could not run
+  // due to missing upstream input. Exclude them from both pass and total
+  // counts so summary reflects only probes that actually executed.
+  const skipped = findings.filter(f => f.severity === 'skipped').length;
+  const scoreable = findings.filter(f => f.severity !== 'skipped');
+  const passed = scoreable.filter(f => f.passed).length;
+  const total = scoreable.length;
+  const skippedSuffix = skipped > 0 ? ` (${skipped} skipped)` : '';
 
   const lines: string[] = [];
   lines.push(`# Audit: ${host}`);
@@ -32,7 +39,7 @@ function renderMarkdown({ target, findings, evidenceNames }: ReportInput): strin
   lines.push('');
   lines.push('## Summary');
   lines.push('');
-  lines.push(`${passed} of ${findings.length} probes passed.`);
+  lines.push(`${passed} of ${total} probes passed${skippedSuffix}.`);
   lines.push('');
   lines.push('## Findings');
   lines.push('');
@@ -57,6 +64,11 @@ function renderMarkdown({ target, findings, evidenceNames }: ReportInput): strin
       lines.push('');
     }
   }
+
+  lines.push('---');
+  lines.push('');
+  lines.push('Severity vocabulary: info (compliant), warn (spec deviation), issue (MUST violation), skipped (probe could not run). See [SEVERITY.md](https://github.com/korrel-dev/korrel-cli/blob/main/docs/SEVERITY.md) for full definitions.');
+  lines.push('');
 
   return lines.join('\n');
 }

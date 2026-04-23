@@ -75,7 +75,7 @@ function probe4(ctx):
 
   // Guard: require upstream AS metadata
   if ctx.authorizationServerMetadata is absent:
-    emit finding(severity=info, title="DCR/CIMD probe skipped: AS metadata not available",
+    emit finding(severity=skipped, title="DCR/CIMD probe skipped: AS metadata not available",
                  detail="Probe 3 did not populate authorizationServerMetadata; probe 4 cannot run.")
     return { findings, evidence=[] }
 
@@ -130,7 +130,7 @@ function probe4(ctx):
                    detail="POST returned HTTP {status}; body: {body_excerpt}.")
   else if response1.status == 200:
     if response1.body.client_id present:
-      emit finding(severity=finding, title="DCR registration response uses HTTP 200 instead of 201",
+      emit finding(severity=warn, title="DCR registration response uses HTTP 200 instead of 201",
                    detail="POST returned 200 with client_id={id}. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration.")
       set contextUpdates.registeredClient = response1.body
     else:
@@ -174,7 +174,7 @@ function probe4(ctx):
   write evidence file 04-dcr-register-host-mismatch.http
 
   if response3.status == 201:
-    emit finding(severity=finding, title="DCR accepted host-mismatched redirect URI",
+    emit finding(severity=warn, title="DCR accepted host-mismatched redirect URI",
                  detail="POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD reject this (RFC 7591 §5 SHOULD).")
   else:
     emit finding(severity=info, title="DCR rejected host-mismatched redirect URI",
@@ -187,26 +187,24 @@ function probe4(ctx):
 
 | Severity  | Title                                                                  | Detail template                                                                                                                                                                      |
 |-----------|------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `info`    | DCR/CIMD probe skipped: AS metadata not available                     | Probe 3 did not populate authorizationServerMetadata; probe 4 cannot run.                                                                                                            |
+| `skipped` | DCR/CIMD probe skipped: AS metadata not available                     | Probe 3 did not populate authorizationServerMetadata; probe 4 cannot run.                                                                                                            |
 | `info`    | CIMD advertised                                                       | AS metadata sets client_id_metadata_document_supported=true.                                                                                                                         |
 | `info`    | CIMD not advertised                                                   | client_id_metadata_document_supported absent or false in AS metadata.                                                                                                                |
 | `info`    | DCR not advertised                                                    | AS metadata does not include registration_endpoint.                                                                                                                                  |
 | `info`    | DCR advertised                                                        | AS metadata registration_endpoint={url}.                                                                                                                                             |
 | `issue`   | DCR endpoint not TLS-protected                                        | registration_endpoint={url} uses non-HTTPS scheme (RFC 7591 §3 MUST).                                                                                                               |
 | `info`    | DCR valid registration accepted                                       | POST returned 201 with client_id={id}.                                                                                                                                               |
-| `finding` | DCR registration response uses HTTP 200 instead of 201               | POST returned 200 with client_id={id}. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.                         |
+| `warn`    | DCR registration response uses HTTP 200 instead of 201               | POST returned 200 with client_id={id}. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.                         |
 | `issue`   | DCR registration returned 200 but response lacks valid client_id      | POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body. Context not populated.                   |
 | `info`    | DCR valid registration not accepted                                   | POST returned HTTP {status}; body: {body_excerpt}.                                                                                                                                   |
 | `issue`   | DCR accepted HTTP redirect URI for confidential client                | POST returned 201; HTTP redirect URIs must be rejected for confidential clients (RFC 7591 §5 MUST).                                                                                  |
 | `info`    | DCR rejected HTTP redirect URI for confidential client                | POST returned HTTP {status} as expected (RFC 7591 §5).                                                                                                                               |
-| `finding` | DCR accepted host-mismatched redirect URI                             | POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD reject this (RFC 7591 §5 SHOULD).                                                                       |
+| `warn`    | DCR accepted host-mismatched redirect URI                             | POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD reject this (RFC 7591 §5 SHOULD).                                                                       |
 | `info`    | DCR rejected host-mismatched redirect URI                             | POST returned HTTP {status}. Host mismatch check is enforced.                                                                                                                        |
 
-Severity vocabulary used: `info`, `finding`, `issue`. These match `Severity` in `src/types.ts`.
-The `critical` level is reserved for the orchestrator; probe 4 does not emit it.
-
-Severity `finding` will be renamed to `warn` per issue #3. When that rename lands, the three
-`finding`-severity rows in this table should update in the same commit.
+Severity vocabulary used: `info`, `warn`, `issue`, `skipped`. These match `Severity` in
+`src/types.ts`. The `critical` level is reserved for the orchestrator; probe 4 does not emit it.
+See `docs/SEVERITY.md` for canonical definitions.
 
 ## Evidence files
 
@@ -245,7 +243,7 @@ and `client_id_metadata_document_supported=true`. Expected probe 4 output:
 - Finding: "CIMD advertised" (info)
 - Finding: "DCR advertised" with `registration_endpoint` URL (info)
 - Finding: one of "DCR valid registration accepted" (info, 201), "DCR registration response
-  uses HTTP 200 instead of 201" (finding, 200 + valid body), "DCR registration returned 200
+  uses HTTP 200 instead of 201" (warn, 200 + valid body), "DCR registration returned 200
   but response lacks valid client_id" (issue, 200 + no body), or "DCR valid registration not
   accepted" (info, other status) depending on the server's behavior
 - Evidence: `04-dcr-register-valid.http`, `04-dcr-register-http-redirect.http`,
@@ -253,7 +251,7 @@ and `client_id_metadata_document_supported=true`. Expected probe 4 output:
 - Finding: "DCR rejected HTTP redirect URI for confidential client" (info) or
   "DCR accepted HTTP redirect URI for confidential client" (issue) depending on enforcement
 - Finding: "DCR rejected host-mismatched redirect URI" (info) or
-  "DCR accepted host-mismatched redirect URI" (finding) depending on enforcement
+  "DCR accepted host-mismatched redirect URI" (warn) depending on enforcement
 - `contextUpdates.registeredClient` populated if POST 1 returned 201 with valid body, or
   200 with valid body
 
@@ -274,7 +272,7 @@ metadata (`https://github.com/login/oauth`) contains no `registration_endpoint` 
 Probe 2 (PRM) failed on this target and probe 3 (AS metadata) did not run. Therefore
 `AuditContext.authorizationServerMetadata` is absent when probe 4 runs. Expected probe 4 output:
 
-- Finding: "DCR/CIMD probe skipped: AS metadata not available" (info)
+- Finding: "DCR/CIMD probe skipped: AS metadata not available" (skipped)
 - No evidence files written
 - No network requests made
 
@@ -283,7 +281,7 @@ Probe 2 (PRM) failed on this target and probe 3 (AS metadata) did not run. There
 - [ ] `korrel-cli/docs/PROBE-4-SCOPE.md` exists at this path
 - [ ] `src/types.ts` `AuditContext.authorizationServerMetadata` field exists (confirmed: yes, type `AsMetadata | undefined`)
 - [ ] `src/types.ts` `AuditContext.registeredClient` field exists (confirmed: yes, type `unknown | undefined`)
-- [ ] `src/types.ts` `Severity` union includes `'finding'` (confirmed: used for host-mismatch finding and 200-status finding)
+- [ ] `src/types.ts` `Severity` union includes `'warn'` (confirmed: used for host-mismatch finding and 200-status finding)
 - [ ] Probe file (when written) exports a function matching `Probe` type: `(ctx: AuditContext) => Promise<ProbeResult>`
 - [ ] Probe returns early with a single info finding when `ctx.authorizationServerMetadata` is absent
 - [ ] Probe writes zero evidence files when `ctx.authorizationServerMetadata` is absent
@@ -296,7 +294,7 @@ Probe 2 (PRM) failed on this target and probe 3 (AS metadata) did not run. There
 - [ ] No `any` types and no `@ts-ignore` comments in the probe file
 - [ ] Probe verified against Linear target: all three evidence files produced, findings match expected shapes above
 - [ ] Probe verified against GitHub target: no evidence files written, two info findings emitted
-- [ ] Probe verified against Atlassian target: no evidence files, one skip info finding emitted
+- [ ] Probe verified against Atlassian target: no evidence files, one skipped finding emitted
 
 ## Open questions
 

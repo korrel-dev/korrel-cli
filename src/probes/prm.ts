@@ -162,7 +162,7 @@ async function fetchAndValidate(
   const finding: Finding = {
     id: PRM_PROBE_ID,
     title: 'Protected Resource Metadata (RFC 9728)',
-    severity: validation.passed ? 'info' : 'finding',
+    severity: validation.passed ? 'info' : 'warn',
     passed: validation.passed,
     observations: validation.observations
   };
@@ -194,7 +194,7 @@ function fallbackSuccess(
   const validationFinding: Finding = {
     id: PRM_PROBE_ID,
     title: 'Protected Resource Metadata (RFC 9728)',
-    severity: validation.passed ? 'info' : 'finding',
+    severity: validation.passed ? 'info' : 'warn',
     passed: validation.passed,
     observations: validation.observations
   };

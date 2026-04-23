@@ -17,7 +17,7 @@ export interface Evidence {
   response: ResponseRecord;
 }
 
-export type Severity = 'info' | 'finding' | 'issue' | 'critical';
+export type Severity = 'info' | 'warn' | 'issue' | 'critical' | 'skipped';
 
 export interface Finding {
   id: string;

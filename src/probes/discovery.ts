@@ -102,7 +102,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   const finding: Finding = {
     id: DISCOVERY_PROBE_ID,
     title: 'Discovery probe (RFC 9728)',
-    severity: passed ? 'info' : 'finding',
+    severity: passed ? 'info' : 'warn',
     passed,
     observations
   };
