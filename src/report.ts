@@ -40,14 +40,20 @@ function renderMarkdown({ target, findings, evidenceNames }: ReportInput): strin
   for (const finding of findings) {
     lines.push(`### ${finding.id}: ${finding.title}`);
     lines.push('');
-    lines.push(`**Result:** ${finding.passed ? 'passed' : 'finding'}`);
+    lines.push(`**Result:** ${finding.passed ? 'passed' : finding.severity}`);
     lines.push('');
     for (const obs of finding.observations) {
       lines.push(`- ${obs}`);
     }
     lines.push('');
-    if (evidenceNames.has(finding.id)) {
-      lines.push(`Evidence: \`evidence/${finding.id}.http\``);
+    const relatedEvidence = [...evidenceNames]
+      .filter(name => name === finding.id || name.startsWith(`${finding.id}-`))
+      .sort();
+
+    if (relatedEvidence.length > 0) {
+      for (const name of relatedEvidence) {
+        lines.push(`- Evidence: \`evidence/${name}.http\``);
+      }
       lines.push('');
     }
   }
