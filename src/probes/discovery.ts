@@ -2,6 +2,12 @@ import type { AuditContext, Evidence, Finding, ProbeResult } from '../types.js';
 
 export const DISCOVERY_PROBE_ID = '01-discovery';
 
+const A1_FINDING_ID = `${DISCOVERY_PROBE_ID}-auth-challenge`;
+const A2_FINDING_ID = `${DISCOVERY_PROBE_ID}-prm-advertisement`;
+
+const A1_TITLE = 'Bearer authentication challenge on unauthenticated request (RFC 6750)';
+const A2_TITLE = 'PRM advertisement in WWW-Authenticate (RFC 9728 §5.1)';
+
 const MCP_INITIALIZE_BODY = {
   jsonrpc: '2.0' as const,
   id: 1,
@@ -26,12 +32,23 @@ const EXPECTED_UNAUTH_ERROR = 'invalid_token';
 /**
  * Probe 1: Discovery.
  *
- * Sends an unauthenticated MCP initialize request and expects:
- *   - HTTP 401 Unauthorized
- *   - WWW-Authenticate: Bearer ... resource_metadata="<PRM URL>"
+ * Sends an unauthenticated MCP initialize request and evaluates two
+ * independent assertions against the response:
  *
- * Per RFC 9728 (OAuth 2.0 Protected Resource Metadata), RFC 6750
- * (Bearer Token Usage), and the MCP auth spec (2025-06-18 onwards).
+ *   A1 (RFC 6750 §3): 401 Unauthorized with a Bearer WWW-Authenticate
+ *                     challenge.
+ *   A2 (RFC 9728 §5.1): `resource_metadata` parameter present in that
+ *                       challenge.
+ *
+ * The A1/A2 split lets a target that returns a compliant Bearer
+ * challenge but omits `resource_metadata` (issue #8 motivating case)
+ * show partial compliance instead of a single undifferentiated
+ * failure. A2 is skipped when A1 fails.
+ *
+ * `contextUpdates.protectedResourceMetadataUrl` is set whenever the
+ * challenge carries a `resource_metadata` URL, independent of the
+ * severity assigned to A1 or A2, so downstream probes can consume
+ * the PRM URL even in partially-compliant scenarios.
  */
 export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   const requestHeaders: Record<string, string> = {
@@ -74,44 +91,81 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   const prmUrl = challenge?.params.get('resource_metadata') ?? null;
   const errorParam = challenge?.params.get('error') ?? null;
 
-  const observations: string[] = [];
-  observations.push(`HTTP ${response.status} ${response.statusText}`);
+  // --- Assertion 1: auth challenge (RFC 6750 §3) ---
+
+  const a1Passed =
+    response.status === 401 &&
+    challenge !== null &&
+    challenge.scheme.toLowerCase() === 'bearer';
+
+  const a1Observations: string[] = [];
+  a1Observations.push(`HTTP ${response.status} ${response.statusText}`);
   if (wwwAuth) {
-    observations.push(`WWW-Authenticate: ${wwwAuth}`);
+    a1Observations.push(`WWW-Authenticate: ${wwwAuth}`);
   } else {
-    observations.push('No WWW-Authenticate header returned.');
+    a1Observations.push('No WWW-Authenticate header returned.');
   }
   if (challenge && challenge.scheme.toLowerCase() !== 'bearer') {
-    observations.push(`WWW-Authenticate scheme is "${challenge.scheme}"; expected Bearer (RFC 6750 §3).`);
-  }
-  if (prmUrl) {
-    observations.push(`resource_metadata URL: ${prmUrl}`);
-  } else if (wwwAuth) {
-    observations.push('WWW-Authenticate present but no resource_metadata parameter (RFC 9728 §5.1).');
+    a1Observations.push(
+      `WWW-Authenticate scheme is '${challenge.scheme}'; expected Bearer (RFC 6750 §3).`
+    );
   }
   if (errorParam !== null) {
     if (!VALID_BEARER_ERRORS.has(errorParam)) {
-      observations.push(`WWW-Authenticate error="${errorParam}" is not a valid RFC 6750 §3.1 value (invalid_request | invalid_token | insufficient_scope).`);
+      a1Observations.push(
+        `WWW-Authenticate error='${errorParam}' is not a valid RFC 6750 §3.1 value (invalid_request | invalid_token | insufficient_scope).`
+      );
     } else if (errorParam !== EXPECTED_UNAUTH_ERROR) {
-      observations.push(`WWW-Authenticate error="${errorParam}" deviates from RFC 6750 §3.1; invalid_token is the correct value for an unauthenticated request.`);
+      a1Observations.push(
+        `WWW-Authenticate error='${errorParam}' deviates from RFC 6750 §3.1; invalid_token is the correct value for an unauthenticated request.`
+      );
     }
   }
 
-  const passed = response.status === 401 && prmUrl !== null;
-
-  const finding: Finding = {
-    id: DISCOVERY_PROBE_ID,
-    title: 'Discovery probe (RFC 9728)',
-    severity: passed ? 'info' : 'warn',
-    passed,
-    observations
+  const a1Finding: Finding = {
+    id: A1_FINDING_ID,
+    title: A1_TITLE,
+    severity: a1Passed ? 'info' : 'issue',
+    passed: a1Passed,
+    observations: a1Observations
   };
+
+  // --- Assertion 2: PRM advertisement (RFC 9728 §5.1) ---
+
+  let a2Finding: Finding;
+  if (!a1Passed) {
+    a2Finding = {
+      id: A2_FINDING_ID,
+      title: A2_TITLE,
+      severity: 'skipped',
+      passed: false,
+      observations: ['Skipped: A1 (auth challenge) did not pass.']
+    };
+  } else if (prmUrl !== null) {
+    a2Finding = {
+      id: A2_FINDING_ID,
+      title: A2_TITLE,
+      severity: 'info',
+      passed: true,
+      observations: [`resource_metadata URL: ${prmUrl}`]
+    };
+  } else {
+    a2Finding = {
+      id: A2_FINDING_ID,
+      title: A2_TITLE,
+      severity: 'warn',
+      passed: false,
+      observations: [
+        'WWW-Authenticate present but no resource_metadata parameter (RFC 9728 §5.1).'
+      ]
+    };
+  }
 
   const result: ProbeResult = {
-    findings: [finding],
+    findings: [a1Finding, a2Finding],
     evidence: [{ name: DISCOVERY_PROBE_ID, evidence }]
   };
-  if (prmUrl) {
+  if (prmUrl !== null) {
     result.contextUpdates = { protectedResourceMetadataUrl: prmUrl };
   }
   return result;
