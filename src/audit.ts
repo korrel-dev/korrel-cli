@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { DISCOVERY_PROBE_ID, discoveryProbe } from './probes/discovery.js';
 import { PRM_PROBE_ID, prmProbe } from './probes/prm.js';
 import { AS_METADATA_PROBE_ID, asMetadataProbe } from './probes/as-metadata.js';
+import { DCR_PROBE_ID, dcrProbe } from './probes/dcr.js';
 import { writeEvidence } from './evidence.js';
 import { writeReport } from './report.js';
 import type { AuditContext, Finding, Probe } from './types.js';
@@ -15,8 +16,9 @@ interface ProbeEntry {
 const probes: ProbeEntry[] = [
   { id: DISCOVERY_PROBE_ID, run: discoveryProbe },
   { id: PRM_PROBE_ID, run: prmProbe },
-  { id: AS_METADATA_PROBE_ID, run: asMetadataProbe }
-  // Probes 4-6 land next.
+  { id: AS_METADATA_PROBE_ID, run: asMetadataProbe },
+  { id: DCR_PROBE_ID, run: dcrProbe }
+  // Probes 5-6 land next.
 ];
 
 export async function runAudit(target: string, outputRoot: string): Promise<void> {
