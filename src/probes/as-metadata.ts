@@ -98,62 +98,49 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   if (response.status !== 200) {
     observations.push('AS metadata endpoint did not return 200; cannot validate.');
   } else {
-    let json: unknown;
-    try {
-      json = JSON.parse(responseBody);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      observations.push(`AS metadata body is not valid JSON: ${message}`);
-    }
+    const validation = validateAsMetadata(responseBody);
+    if (!validation.ok) {
+      observations.push(...validation.observations);
+    } else {
+      const as = validation.data;
+      observations.push(`issuer: ${as.issuer}`);
+      observations.push(`authorization_endpoint: ${as.authorization_endpoint}`);
+      observations.push(`token_endpoint: ${as.token_endpoint}`);
 
-    if (json !== undefined) {
-      const parseResult = AsMetadataSchema.safeParse(json);
-      if (!parseResult.success) {
-        for (const issue of parseResult.error.issues) {
-          const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
-          observations.push(`AS metadata schema: ${path}: ${issue.message} (RFC 8414 §2)`);
-        }
-      } else {
-        const as = parseResult.data;
-        observations.push(`issuer: ${as.issuer}`);
-        observations.push(`authorization_endpoint: ${as.authorization_endpoint}`);
-        observations.push(`token_endpoint: ${as.token_endpoint}`);
-
-        if (as.issuer !== issuer) {
-          observations.push(`issuer "${as.issuer}" does not match the advertised AS URL "${issuer}" (RFC 8414 §3.3).`);
-        }
-
-        const pkce = as.code_challenge_methods_supported;
-        if (!pkce) {
-          observations.push('code_challenge_methods_supported not advertised; PKCE support is unknown (RFC 7636).');
-        } else if (!pkce.includes('S256')) {
-          observations.push(`code_challenge_methods_supported=[${pkce.join(', ')}] does not include S256 (RFC 7636 §4.2).`);
-        }
-
-        const grants = as.grant_types_supported;
-        if (!grants) {
-          observations.push('grant_types_supported not advertised; defaults to ["authorization_code", "implicit"] per RFC 8414 §2.');
-        } else {
-          if (!grants.includes('authorization_code')) {
-            observations.push(`grant_types_supported=[${grants.join(', ')}] does not include authorization_code.`);
-          }
-          const deprecated = grants.filter(g => DEPRECATED_GRANTS.has(g));
-          if (deprecated.length > 0) {
-            observations.push(`grant_types_supported advertises OAuth 2.1-deprecated grants: ${deprecated.join(', ')}.`);
-          }
-        }
-
-        contextUpdates = {
-          authorizationServerMetadata: as,
-          authorizationEndpoint: as.authorization_endpoint,
-          tokenEndpoint: as.token_endpoint
-        };
-        if (as.registration_endpoint) {
-          contextUpdates.registrationEndpoint = as.registration_endpoint;
-        }
-
-        passed = true;
+      if (as.issuer !== issuer) {
+        observations.push(`issuer "${as.issuer}" does not match the advertised AS URL "${issuer}" (RFC 8414 §3.3).`);
       }
+
+      const pkce = as.code_challenge_methods_supported;
+      if (!pkce) {
+        observations.push('code_challenge_methods_supported not advertised; PKCE support is unknown (RFC 7636).');
+      } else if (!pkce.includes('S256')) {
+        observations.push(`code_challenge_methods_supported=[${pkce.join(', ')}] does not include S256 (RFC 7636 §4.2).`);
+      }
+
+      const grants = as.grant_types_supported;
+      if (!grants) {
+        observations.push('grant_types_supported not advertised; defaults to ["authorization_code", "implicit"] per RFC 8414 §2.');
+      } else {
+        if (!grants.includes('authorization_code')) {
+          observations.push(`grant_types_supported=[${grants.join(', ')}] does not include authorization_code.`);
+        }
+        const deprecated = grants.filter(g => DEPRECATED_GRANTS.has(g));
+        if (deprecated.length > 0) {
+          observations.push(`grant_types_supported advertises OAuth 2.1-deprecated grants: ${deprecated.join(', ')}.`);
+        }
+      }
+
+      contextUpdates = {
+        authorizationServerMetadata: as,
+        authorizationEndpoint: as.authorization_endpoint,
+        tokenEndpoint: as.token_endpoint
+      };
+      if (as.registration_endpoint) {
+        contextUpdates.registrationEndpoint = as.registration_endpoint;
+      }
+
+      passed = true;
     }
   }
 
@@ -173,6 +160,38 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
     result.contextUpdates = contextUpdates;
   }
   return result;
+}
+
+type AsMetadataValidation =
+  | { ok: true; data: AsMetadata }
+  | { ok: false; observations: string[] };
+
+/**
+ * Parse and schema-validate an AS metadata response body. Collapses the
+ * JSON.parse and zod.safeParse failure paths into a single discriminated
+ * return so callers do not need an intermediate `unknown` binding or a
+ * defined-ness guard. Mirrors the helper shape used in `prm.ts`.
+ */
+function validateAsMetadata(body: string): AsMetadataValidation {
+  let json: unknown;
+  try {
+    json = JSON.parse(body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, observations: [`AS metadata body is not valid JSON: ${message}`] };
+  }
+
+  const parseResult = AsMetadataSchema.safeParse(json);
+  if (!parseResult.success) {
+    const observations: string[] = [];
+    for (const issue of parseResult.error.issues) {
+      const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
+      observations.push(`AS metadata schema: ${path}: ${issue.message} (RFC 8414 §2)`);
+    }
+    return { ok: false, observations };
+  }
+
+  return { ok: true, data: parseResult.data };
 }
 
 /**
