@@ -152,10 +152,9 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   const body1Validated = body1Parsed !== undefined
     ? RegistrationSuccessSchema.safeParse(body1Parsed)
     : null;
-  const hasValidClientId = body1Validated !== null && body1Validated.success;
 
   if (attempt1.status === 201) {
-    if (hasValidClientId && body1Validated !== null && body1Validated.success) {
+    if (body1Validated?.success) {
       findings.push({
         id: DCR_PROBE_ID,
         title: 'DCR valid registration accepted',
@@ -178,7 +177,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       });
     }
   } else if (attempt1.status === 200) {
-    if (hasValidClientId && body1Validated !== null && body1Validated.success) {
+    if (body1Validated?.success) {
       findings.push({
         id: DCR_PROBE_ID,
         title: 'DCR registration response uses HTTP 200 instead of 201',
