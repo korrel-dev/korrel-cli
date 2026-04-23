@@ -30,8 +30,6 @@ here when DCR succeeds.
 - Populate `AuditContext.registeredClient` via `contextUpdates` when test 1 succeeds (HTTP
   201 with `client_id` present in body, or HTTP 200 with `client_id` present in body per the
   resolved 200-handling rule below). Future probes 5 and 6 will consume this field.
-- Populate `AuditContext.registrationEndpoint` via `contextUpdates` when the endpoint is
-  confirmed (mirrors what probe 3 already sets, kept for probe 4 ownership clarity).
 - Write one evidence file per active POST (three files when DCR is present).
 
 ## Out of scope
@@ -127,7 +125,6 @@ function probe4(ctx):
       emit finding(severity=info, title="DCR valid registration accepted",
                    detail="POST returned 201 with client_id={id}.")
       set contextUpdates.registeredClient = response1.body
-      set contextUpdates.registrationEndpoint = registrationEndpoint
     else:
       emit finding(severity=info, title="DCR valid registration not accepted",
                    detail="POST returned HTTP {status}; body: {body_excerpt}.")
@@ -136,7 +133,6 @@ function probe4(ctx):
       emit finding(severity=finding, title="DCR registration response uses HTTP 200 instead of 201",
                    detail="POST returned 200 with client_id={id}. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration.")
       set contextUpdates.registeredClient = response1.body
-      set contextUpdates.registrationEndpoint = registrationEndpoint
     else:
       emit finding(severity=issue, title="DCR registration returned 200 but response lacks valid client_id",
                    detail="POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body.")
