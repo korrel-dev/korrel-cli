@@ -10,3 +10,6 @@ audits/
 
 # Pre-disclosure findings (see coordinated-disclosure protocol)
 PRIVATE-NOTES.md
+
+# Session handoff briefs (ephemeral, main-thread to subagent)
+HANDOFF.md
