@@ -161,7 +161,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
         severity: 'info',
         passed: true,
         observations: [
-          `POST returned 201 with client_id=${body1Validated.data.client_id}.`
+          `POST returned 201 with client_id=<redacted>.`
         ]
       });
       contextUpdates = { registeredClient: body1Validated.data };
@@ -184,7 +184,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
         severity: 'warn',
         passed: false,
         observations: [
-          `POST returned 200 with client_id=${body1Validated.data.client_id}. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.`
+          `POST returned 200 with client_id=<redacted>. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.`
         ]
       });
       contextUpdates = { registeredClient: body1Validated.data };
