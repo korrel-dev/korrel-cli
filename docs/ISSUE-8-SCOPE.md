@@ -168,9 +168,20 @@ for A1. The cited clause is RFC 6750 §3, first normative sentence. No hedging.
 
 One file per run: `evidence/01-discovery.http`
 
-Both findings attach to this file because `report.ts` uses prefix matching against finding
-ids, and both ids share the `01-discovery` prefix. The over-attachment behaviour is
-acknowledged (issue #6) and unchanged by this work.
+Both findings attach to this file because `report.ts` uses a bidirectional prefix match
+between evidence stems and finding ids: a finding links to an evidence file if the evidence
+stem is a prefix of the finding id (with `-` separator), or the finding id is a prefix of
+the evidence stem (with `-` separator), or the two are equal. Both directions matter here:
+
+- Finding id `01-discovery-auth-challenge` links to evidence `01-discovery.http` because
+  the evidence stem is a prefix of the finding id. Same for `01-discovery-prm-advertisement`.
+  This is the split-probe case introduced by this work.
+- Finding id `01-discovery` links to evidence `01-discovery-auth-challenge.http` and
+  `01-discovery-prm-advertisement.http` because the finding id is a prefix of each evidence
+  stem. This is the fail-soft synthesis case, where a thrown probe produces a synthetic
+  finding keyed on the probe's stem rather than a specific assertion id.
+
+The over-attachment behaviour is acknowledged (issue #6) and unchanged by this work.
 
 ## Verification
 
