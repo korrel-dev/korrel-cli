@@ -11,8 +11,8 @@ step it implements.
 |---|---|---|---|---|
 | 1 | `01-discovery` | §1 Discovery probe | RFC 9728, RFC 6750 §3.1, RFC 7235 | Implemented |
 | 2 | `02-prm` | §2 AS metadata (PRM half) | RFC 9728 §3 | Implemented |
-| 3 | `03-as-metadata` | §2 AS metadata (AS half) | RFC 8414 | Scaffolded |
-| 4 | `04-registration` | §3 Client registration | RFC 7591, MCP CIMD (spec 2025-11-25) | Pending |
+| 3 | `03-as-metadata` | §2 AS metadata (AS half) | RFC 8414 | Implemented |
+| 4 | `04-registration` | §3 Client registration | RFC 7591, MCP CIMD (spec 2025-11-25) | Implemented |
 | 5 | `05-pkce` | §4 PKCE enforcement | RFC 7636 | Pending |
 | 6 | `06-tokens` | §5 Token hygiene | RFC 8707, RFC 6750 | Pending |
 | 7 | `07-ancillary` | §6 Ancillary controls | transport, CSRF, security headers | Pending |
@@ -42,3 +42,5 @@ split similarly when they land.
   notes the others.
 - `02-prm`: explicit check that the PRM document is served with
   `Content-Type: application/json` (RFC 9728 §3).
+- `04-registration`: bodyExcerpt may leak client_id on
+  invalid-response paths. Tracked as #11.
