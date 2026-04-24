@@ -1,9 +1,9 @@
 import type { AuditContext, Evidence, Finding, ProbeResult } from '../types.js';
 
-export const DISCOVERY_PROBE_ID = '01-discovery';
+export const DISCOVERY_PROBE_STEM = '01-discovery';
 
-const A1_FINDING_ID = `${DISCOVERY_PROBE_ID}-auth-challenge`;
-const A2_FINDING_ID = `${DISCOVERY_PROBE_ID}-prm-advertisement`;
+const A1_FINDING_ID = `${DISCOVERY_PROBE_STEM}-auth-challenge`;
+const A2_FINDING_ID = `${DISCOVERY_PROBE_STEM}-prm-advertisement`;
 
 const A1_TITLE = 'Bearer authentication challenge on unauthenticated request (RFC 6750)';
 const A2_TITLE = 'PRM advertisement in WWW-Authenticate (RFC 9728 §5.1)';
@@ -163,7 +163,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   const result: ProbeResult = {
     findings: [a1Finding, a2Finding],
-    evidence: [{ name: DISCOVERY_PROBE_ID, evidence }]
+    evidence: [{ name: DISCOVERY_PROBE_STEM, evidence }]
   };
   if (prmUrl !== null) {
     result.contextUpdates = { protectedResourceMetadataUrl: prmUrl };

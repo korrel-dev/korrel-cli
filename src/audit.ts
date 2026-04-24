@@ -1,6 +1,6 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DISCOVERY_PROBE_ID, discoveryProbe } from './probes/discovery.js';
+import { DISCOVERY_PROBE_STEM, discoveryProbe } from './probes/discovery.js';
 import { PRM_PROBE_ID, prmProbe } from './probes/prm.js';
 import { AS_METADATA_PROBE_ID, asMetadataProbe } from './probes/as-metadata.js';
 import { DCR_PROBE_ID, dcrProbe } from './probes/dcr.js';
@@ -14,7 +14,7 @@ interface ProbeEntry {
 }
 
 const probes: ProbeEntry[] = [
-  { id: DISCOVERY_PROBE_ID, run: discoveryProbe },
+  { id: DISCOVERY_PROBE_STEM, run: discoveryProbe },
   { id: PRM_PROBE_ID, run: prmProbe },
   { id: AS_METADATA_PROBE_ID, run: asMetadataProbe },
   { id: DCR_PROBE_ID, run: dcrProbe }
