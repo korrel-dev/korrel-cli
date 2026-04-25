@@ -2,8 +2,10 @@ import { z } from 'zod';
 import type { AuditContext, Evidence, Finding, ProbeResult } from '../types.js';
 
 export const AS_METADATA_PROBE_ID = '03-as-metadata';
+export const AS_METADATA_ISSUER_VALIDATION_FINDING_ID = '03-as-metadata-issuer-validation';
 export const AS_METADATA_PKCE_METHODS_FINDING_ID = '03-as-metadata-pkce-methods';
 const A4_TITLE = 'PKCE code_challenge_methods_supported advertisement (RFC 7636 §4.2)';
+const A5_TITLE = 'AS metadata issuer validation (RFC 8414 §3.3)';
 
 /**
  * Authorization Server metadata, per RFC 8414 §2.
@@ -102,6 +104,10 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   // undefined when the field is absent from the parsed body).
   let metadataParsed = false;
   let pkce: string[] | undefined;
+  // A5 (issuer validation) state. `issuerMismatch` is meaningful only when
+  // `metadataParsed` is true; when false, A5 is `skipped`.
+  let issuerMismatch = false;
+  let returnedIssuer: string | undefined;
 
   if (response.status !== 200) {
     observations.push('AS metadata endpoint did not return 200; cannot validate.');
@@ -115,8 +121,12 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
       observations.push(`authorization_endpoint: ${as.authorization_endpoint}`);
       observations.push(`token_endpoint: ${as.token_endpoint}`);
 
-      if (as.issuer !== issuer) {
+      returnedIssuer = as.issuer;
+      issuerMismatch = (as.issuer !== issuer);
+
+      if (issuerMismatch) {
         observations.push(`issuer "${as.issuer}" does not match the advertised AS URL "${issuer}" (RFC 8414 §3.3).`);
+        observations.push('AS metadata data MUST NOT be used per RFC 8414 §3.3; contextUpdates suppressed. See 03-as-metadata-issuer-validation finding.');
       }
 
       pkce = as.code_challenge_methods_supported;
@@ -137,17 +147,24 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
         }
       }
 
-      contextUpdates = {
-        authorizationServerMetadata: as,
-        authorizationEndpoint: as.authorization_endpoint,
-        tokenEndpoint: as.token_endpoint
-      };
-      if (as.registration_endpoint) {
-        contextUpdates.registrationEndpoint = as.registration_endpoint;
-      }
-
-      passed = true;
+      // Body parsed successfully; A4 evaluates PKCE regardless of issuer match.
       metadataParsed = true;
+
+      if (!issuerMismatch) {
+        // RFC 8414 §3.3 satisfied; safe to publish endpoints downstream.
+        contextUpdates = {
+          authorizationServerMetadata: as,
+          authorizationEndpoint: as.authorization_endpoint,
+          tokenEndpoint: as.token_endpoint
+        };
+        if (as.registration_endpoint) {
+          contextUpdates.registrationEndpoint = as.registration_endpoint;
+        }
+
+        passed = true;
+      }
+      // On issuer mismatch: outer `passed` stays false and contextUpdates
+      // is intentionally not populated, per RFC 8414 §3.3 MUST NOT.
     }
   }
 
@@ -159,16 +176,73 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
     observations
   };
 
+  const a5Finding = buildIssuerValidationFinding(metadataParsed, issuerMismatch, returnedIssuer, issuer);
   const a4Finding = buildPkceMethodsFinding(metadataParsed, pkce);
 
   const result: ProbeResult = {
-    findings: [finding, a4Finding],
+    findings: [finding, a5Finding, a4Finding],
     evidence: [{ name: AS_METADATA_PROBE_ID, evidence }]
   };
   if (contextUpdates) {
     result.contextUpdates = contextUpdates;
   }
   return result;
+}
+
+/**
+ * Assertion 5 (issue #20): evaluate RFC 8414 §3.3 issuer equality.
+ *
+ * Three outcomes:
+ *   - skipped: AS metadata body not available or not parseable.
+ *   - issue (passed: false): returned `issuer` does not match the issuer
+ *     identifier used to construct the well-known URL. RFC 8414 §3.3
+ *     MUST violation; the metadata MUST NOT be used (contextUpdates is
+ *     suppressed in the caller).
+ *   - info (passed: true): issuer matches; RFC 8414 §3.3 satisfied.
+ *
+ * Comparison is JS `!==` on string values; RFC 8414 §4 requires Unicode
+ * code-point equality with no normalization, which `!==` provides.
+ */
+function buildIssuerValidationFinding(
+  metadataParsed: boolean,
+  issuerMismatch: boolean,
+  returnedIssuer: string | undefined,
+  expectedIssuer: string
+): Finding {
+  if (!metadataParsed) {
+    return {
+      id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+      title: A5_TITLE,
+      severity: 'skipped',
+      passed: false,
+      observations: ['Skipped: AS metadata body not available or not parseable.']
+    };
+  }
+
+  if (issuerMismatch) {
+    return {
+      id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+      title: A5_TITLE,
+      severity: 'issue',
+      passed: false,
+      observations: [
+        `Returned issuer: "${returnedIssuer ?? ''}"`,
+        `Expected issuer (from well-known URL construction): "${expectedIssuer}"`,
+        'RFC 8414 §3.3 MUST: the issuer value in the metadata response MUST be identical to the issuer identifier value used to construct the well-known URI.',
+        'RFC 8414 §3.3 MUST NOT: the data contained in this response MUST NOT be used. contextUpdates suppressed; downstream probes will not receive authorization_endpoint, token_endpoint, or registration_endpoint from this response.'
+      ]
+    };
+  }
+
+  return {
+    id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+    title: A5_TITLE,
+    severity: 'info',
+    passed: true,
+    observations: [
+      `Returned issuer "${returnedIssuer ?? ''}" matches the expected issuer identifier. RFC 8414 §3.3 MUST satisfied.`
+    ]
+  };
 }
 
 /**
