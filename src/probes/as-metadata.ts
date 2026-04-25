@@ -51,7 +51,26 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: false,
       observations: ['Probe 2 did not discover any authorization_servers; AS metadata fetch skipped.']
     };
-    return { findings: [finding], evidence: [] };
+    // Zero-AS skip text names the upstream cause (no authorization_servers
+    // discovered by probe 2). Distinct from the not-parseable skip text
+    // emitted by buildIssuerValidationFinding / buildPkceMethodsFinding on
+    // the post-fetch path.
+    const zeroAsSkipObservation = 'Skipped: probe 2 did not discover any authorization_servers.';
+    const a5Finding: Finding = {
+      id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+      title: A5_TITLE,
+      severity: 'skipped',
+      passed: false,
+      observations: [zeroAsSkipObservation]
+    };
+    const a4Finding: Finding = {
+      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      title: A4_TITLE,
+      severity: 'skipped',
+      passed: false,
+      observations: [zeroAsSkipObservation]
+    };
+    return { findings: [finding, a5Finding, a4Finding], evidence: [] };
   }
 
   const observations: string[] = [];
