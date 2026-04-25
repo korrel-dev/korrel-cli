@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { AuditContext, Evidence, Finding, ProbeResult } from '../types.js';
 
 export const AS_METADATA_PROBE_ID = '03-as-metadata';
+export const AS_METADATA_PKCE_METHODS_FINDING_ID = '03-as-metadata-pkce-methods';
+const A4_TITLE = 'PKCE code_challenge_methods_supported advertisement (RFC 7636 §4.2)';
 
 /**
  * Authorization Server metadata, per RFC 8414 §2.
@@ -94,6 +96,12 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   let passed = false;
   let contextUpdates: Partial<AuditContext> | undefined;
+  // Tracks whether the outer probe successfully parsed an AS metadata body.
+  // A4 (PKCE methods) is `skipped` when this is false. When true, `pkce`
+  // carries the advertised code_challenge_methods_supported array (or
+  // undefined when the field is absent from the parsed body).
+  let metadataParsed = false;
+  let pkce: string[] | undefined;
 
   if (response.status !== 200) {
     observations.push('AS metadata endpoint did not return 200; cannot validate.');
@@ -111,11 +119,9 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
         observations.push(`issuer "${as.issuer}" does not match the advertised AS URL "${issuer}" (RFC 8414 §3.3).`);
       }
 
-      const pkce = as.code_challenge_methods_supported;
-      if (!pkce) {
-        observations.push('code_challenge_methods_supported not advertised; PKCE support is unknown (RFC 7636).');
-      } else if (!pkce.includes('S256')) {
-        observations.push(`code_challenge_methods_supported=[${pkce.join(', ')}] does not include S256 (RFC 7636 §4.2).`);
+      pkce = as.code_challenge_methods_supported;
+      if (pkce) {
+        observations.push(`PKCE methods advertised: [${pkce.join(', ')}]. See 03-as-metadata-pkce-methods finding.`);
       }
 
       const grants = as.grant_types_supported;
@@ -141,6 +147,7 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
       }
 
       passed = true;
+      metadataParsed = true;
     }
   }
 
@@ -152,14 +159,97 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
     observations
   };
 
+  const a4Finding = buildPkceMethodsFinding(metadataParsed, pkce);
+
   const result: ProbeResult = {
-    findings: [finding],
+    findings: [finding, a4Finding],
     evidence: [{ name: AS_METADATA_PROBE_ID, evidence }]
   };
   if (contextUpdates) {
     result.contextUpdates = contextUpdates;
   }
   return result;
+}
+
+/**
+ * Assertion 4 (issue #19): evaluate `code_challenge_methods_supported`
+ * advertisement per RFC 7636 §4.2 and OAuth 2.1 draft-15 §4.1.1.
+ *
+ * Five outcomes:
+ *   - skipped: AS metadata body not available or not parseable.
+ *   - info (passed: false): field absent entirely.
+ *   - info (passed: true): S256 present, plain absent.
+ *   - warn (passed: false): S256 present, plain also present.
+ *   - issue (passed: false): field present, S256 absent.
+ */
+function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undefined): Finding {
+  if (!metadataParsed) {
+    return {
+      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      title: A4_TITLE,
+      severity: 'skipped',
+      passed: false,
+      observations: ['Skipped: AS metadata body not available or not parseable.']
+    };
+  }
+
+  if (pkce === undefined) {
+    return {
+      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      title: A4_TITLE,
+      severity: 'info',
+      passed: false,
+      observations: [
+        'code_challenge_methods_supported not present in AS metadata.',
+        'RFC 8414 §2: if omitted, the authorization server does not support PKCE.'
+      ]
+    };
+  }
+
+  const methodsLine = `code_challenge_methods_supported: [${pkce.join(', ')}]`;
+  const hasS256 = pkce.includes('S256');
+  const hasPlain = pkce.includes('plain');
+
+  if (hasS256 && !hasPlain) {
+    return {
+      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      title: A4_TITLE,
+      severity: 'info',
+      passed: true,
+      observations: [
+        methodsLine,
+        'S256 advertised; plain not advertised. RFC 7636 §4.2 MTI baseline satisfied.'
+      ]
+    };
+  }
+
+  if (hasS256 && hasPlain) {
+    return {
+      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      title: A4_TITLE,
+      severity: 'warn',
+      passed: false,
+      observations: [
+        methodsLine,
+        'plain advertised alongside S256.',
+        'No server-directed MUST NOT exists in RFC 7636, RFC 8414 §2, or OAuth 2.1 draft-15 §4.1.1.',
+        'RFC 7636 §4.2 designates S256 as MTI on the server and requires clients capable of S256 to use it.',
+        'OAuth 2.1 draft-15 §4.1.1 permits plain in AS metadata as a fallback discovery path for clients that cannot support S256.'
+      ]
+    };
+  }
+
+  // pkce present but does not include 'S256' (may include 'plain' or other values).
+  return {
+    id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+    title: A4_TITLE,
+    severity: 'issue',
+    passed: false,
+    observations: [
+      methodsLine,
+      'S256 is not advertised. RFC 7636 §4.2 designates S256 as Mandatory To Implement (MTI) on the server. Without S256 in the advertised methods, clients cannot use the MTI baseline regardless of their own capability.'
+    ]
+  };
 }
 
 type AsMetadataValidation =
