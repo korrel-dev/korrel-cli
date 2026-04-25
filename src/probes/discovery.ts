@@ -4,9 +4,11 @@ export const DISCOVERY_PROBE_STEM = '01-discovery';
 
 const A1_FINDING_ID = `${DISCOVERY_PROBE_STEM}-auth-challenge`;
 const A2_FINDING_ID = `${DISCOVERY_PROBE_STEM}-prm-advertisement`;
+const A3_FINDING_ID = `${DISCOVERY_PROBE_STEM}-error-code-absent`;
 
 const A1_TITLE = 'Bearer authentication challenge on unauthenticated request (RFC 6750)';
 const A2_TITLE = 'PRM advertisement in WWW-Authenticate (RFC 9728 §5.1)';
+const A3_TITLE = 'No error code in unauthenticated Bearer challenge (RFC 6750 §3.1)';
 
 const MCP_INITIALIZE_BODY = {
   jsonrpc: '2.0' as const,
@@ -22,32 +24,28 @@ const MCP_INITIALIZE_BODY = {
   }
 };
 
-// RFC 6750 §3.1 enumerates the only valid `error` values for Bearer
-// challenges. For an unauthenticated request the spec-correct value
-// is `invalid_token`; `invalid_request` is reserved for malformed
-// requests (e.g. duplicate token parameters).
-const VALID_BEARER_ERRORS = new Set(['invalid_request', 'invalid_token', 'insufficient_scope']);
-const EXPECTED_UNAUTH_ERROR = 'invalid_token';
-
 /**
  * Probe 1: Discovery.
  *
- * Sends an unauthenticated MCP initialize request and evaluates two
+ * Sends an unauthenticated MCP initialize request and evaluates three
  * independent assertions against the response:
  *
- *   A1 (RFC 6750 §3): 401 Unauthorized with a Bearer WWW-Authenticate
- *                     challenge.
+ *   A1 (RFC 6750 §3):   401 Unauthorized with a Bearer WWW-Authenticate
+ *                       challenge.
  *   A2 (RFC 9728 §5.1): `resource_metadata` parameter present in that
  *                       challenge.
+ *   A3 (RFC 6750 §3.1): no `error`, `error_description`, or `error_uri`
+ *                       parameter present on a no-credentials challenge.
  *
- * The A1/A2 split lets a target that returns a compliant Bearer
+ * The A1/A2/A3 split lets a target that returns a compliant Bearer
  * challenge but omits `resource_metadata` (issue #8 motivating case)
+ * or includes an error code on a no-credentials request (issue #18)
  * show partial compliance instead of a single undifferentiated
- * failure. A2 is skipped when A1 fails.
+ * failure. A2 and A3 are skipped when A1 fails.
  *
  * `contextUpdates.protectedResourceMetadataUrl` is set whenever the
  * challenge carries a `resource_metadata` URL, independent of the
- * severity assigned to A1 or A2, so downstream probes can consume
+ * severity assigned to A1, A2, or A3, so downstream probes can consume
  * the PRM URL even in partially-compliant scenarios.
  */
 export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
@@ -89,7 +87,6 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   const wwwAuth = response.headers.get('www-authenticate');
   const challenge = wwwAuth ? parseWwwAuthenticate(wwwAuth) : null;
   const prmUrl = challenge?.params.get('resource_metadata') ?? null;
-  const errorParam = challenge?.params.get('error') ?? null;
 
   // --- Assertion 1: auth challenge (RFC 6750 §3) ---
 
@@ -109,17 +106,6 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
     a1Observations.push(
       `WWW-Authenticate scheme is '${challenge.scheme}'; expected Bearer (RFC 6750 §3).`
     );
-  }
-  if (errorParam !== null) {
-    if (!VALID_BEARER_ERRORS.has(errorParam)) {
-      a1Observations.push(
-        `WWW-Authenticate error='${errorParam}' is not a valid RFC 6750 §3.1 value (invalid_request | invalid_token | insufficient_scope).`
-      );
-    } else if (errorParam !== EXPECTED_UNAUTH_ERROR) {
-      a1Observations.push(
-        `WWW-Authenticate error='${errorParam}' deviates from RFC 6750 §3.1; invalid_token is the correct value for an unauthenticated request.`
-      );
-    }
   }
 
   const a1Finding: Finding = {
@@ -161,8 +147,59 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
     };
   }
 
+  // --- Assertion 3: error code absent on no-credentials challenge (RFC 6750 §3.1) ---
+
+  let a3Finding: Finding;
+  if (!a1Passed || challenge === null || wwwAuth === null) {
+    a3Finding = {
+      id: A3_FINDING_ID,
+      title: A3_TITLE,
+      severity: 'skipped',
+      passed: false,
+      observations: ['Skipped: A1 (auth challenge) did not pass.']
+    };
+  } else {
+    const errorPresent = challenge.params.has('error');
+    const errorDescPresent = challenge.params.has('error_description');
+    const errorUriPresent = challenge.params.has('error_uri');
+    const anyErrorParam = errorPresent || errorDescPresent || errorUriPresent;
+
+    const a3Observations: string[] = [];
+    a3Observations.push(`WWW-Authenticate: ${wwwAuth}`);
+
+    if (anyErrorParam) {
+      const offendingParams: string[] = [];
+      if (errorPresent) offendingParams.push('error');
+      if (errorDescPresent) offendingParams.push('error_description');
+      if (errorUriPresent) offendingParams.push('error_uri');
+      for (const param of offendingParams) {
+        a3Observations.push(
+          `WWW-Authenticate includes '${param}' parameter; RFC 6750 §3.1 states the resource server SHOULD NOT include error information on a request that lacks authentication credentials.`
+        );
+      }
+      a3Finding = {
+        id: A3_FINDING_ID,
+        title: A3_TITLE,
+        severity: 'warn',
+        passed: false,
+        observations: a3Observations
+      };
+    } else {
+      a3Observations.push(
+        'No error, error_description, or error_uri parameter present.'
+      );
+      a3Finding = {
+        id: A3_FINDING_ID,
+        title: A3_TITLE,
+        severity: 'info',
+        passed: true,
+        observations: a3Observations
+      };
+    }
+  }
+
   const result: ProbeResult = {
-    findings: [a1Finding, a2Finding],
+    findings: [a1Finding, a2Finding, a3Finding],
     evidence: [{ name: DISCOVERY_PROBE_STEM, evidence }]
   };
   if (prmUrl !== null) {
