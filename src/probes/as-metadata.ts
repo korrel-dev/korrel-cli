@@ -4,6 +4,7 @@ import type { AuditContext, Evidence, Finding, ProbeResult } from '../types.js';
 export const AS_METADATA_PROBE_ID = '03-as-metadata';
 export const AS_METADATA_ISSUER_VALIDATION_FINDING_ID = '03-as-metadata-issuer-validation';
 export const AS_METADATA_PKCE_METHODS_FINDING_ID = '03-as-metadata-pkce-methods';
+export const AS_METADATA_MULTI_AS_FINDING_ID = '03-as-metadata-multi-as';
 const A4_TITLE = 'PKCE code_challenge_methods_supported advertisement (RFC 7636 §4.2)';
 const A5_TITLE = 'AS metadata issuer validation (RFC 8414 §3.3)';
 
@@ -74,9 +75,6 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   }
 
   const observations: string[] = [];
-  if (servers.length > 1) {
-    observations.push(`authorization_servers lists ${servers.length} entries; probe 3 v0 only fetches the first. Remaining: ${servers.slice(1).join(', ')}.`);
-  }
 
   const issuer = servers[0]!;
   const wellKnownUrl = asMetadataUrl(issuer);
@@ -199,8 +197,22 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   const a5Finding = buildIssuerValidationFinding(metadataParsed, issuerMismatch, returnedIssuer, issuer);
   const a4Finding = buildPkceMethodsFinding(metadataParsed, pkce);
 
+  const findings: Finding[] = [finding, a5Finding, a4Finding];
+  if (servers.length > 1) {
+    findings.push({
+      id: AS_METADATA_MULTI_AS_FINDING_ID,
+      title: 'Multi-AS configuration not fully audited',
+      severity: 'info',
+      passed: false,
+      observations: [
+        `AS metadata lists ${servers.length} authorization_servers entries. Probe 3 v0 audits only the first (${servers[0]}). Remaining: ${servers.slice(1).join(', ')}. Multi-AS coverage is planned for a future probe revision.`
+      ],
+      evidence: [AS_METADATA_PROBE_ID]
+    });
+  }
+
   const result: ProbeResult = {
-    findings: [finding, a5Finding, a4Finding],
+    findings,
     evidence: [{ name: AS_METADATA_PROBE_ID, evidence }]
   };
   if (contextUpdates) {
