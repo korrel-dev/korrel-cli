@@ -16,8 +16,6 @@ const EVIDENCE_NAME_HOST_MISMATCH = '04-dcr-register-host-mismatch';
 const CLIENT_NAME = 'korrel-cli audit probe';
 const CLIENT_URI = 'https://korrel.dev';
 
-const BODY_EXCERPT_MAX_LEN = 200;
-
 /**
  * Minimal successful RFC 7591 §3.2.1 registration response schema. Only
  * `client_id` is required; the full spec includes `client_secret`,
@@ -193,7 +191,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       severity: 'info',
       passed: false,
       observations: [
-        `POST returned HTTP ${attempt1.status}; body: ${bodyExcerpt(attempt1.body)}.`
+        `POST returned HTTP ${attempt1.status}. See evidence file.`
       ]
     });
   }
@@ -336,12 +334,4 @@ function parseJson(body: string): unknown {
   } catch {
     return undefined;
   }
-}
-
-function bodyExcerpt(body: string): string {
-  const trimmed = body.trim();
-  if (trimmed.length <= BODY_EXCERPT_MAX_LEN) {
-    return trimmed;
-  }
-  return `${trimmed.slice(0, BODY_EXCERPT_MAX_LEN)}... (truncated)`;
 }
