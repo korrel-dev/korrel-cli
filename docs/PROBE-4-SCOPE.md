@@ -126,8 +126,9 @@ function probe4(ctx):
                    detail="POST returned 201 with client_id={id}.")
       set contextUpdates.registeredClient = response1.body
     else:
-      emit finding(severity=info, title="DCR valid registration not accepted",
-                   detail="POST returned HTTP {status}; body: {body_excerpt}.")
+      emit finding(severity=issue, title="DCR registration returned 201 but response lacks valid client_id",
+                   detail="POST returned 201 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires a client_id in the response body.")
+      // Do NOT populate contextUpdates.registeredClient
   else if response1.status == 200:
     if response1.body.client_id present:
       emit finding(severity=warn, title="DCR registration response uses HTTP 200 instead of 201",
@@ -138,8 +139,8 @@ function probe4(ctx):
                    detail="POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body.")
       // Do NOT populate contextUpdates.registeredClient
   else:
-    emit finding(severity=info, title="DCR valid registration not accepted",
-                 detail="POST returned HTTP {status}; body: {body_excerpt}.")
+    emit finding(severity=info, title="DCR valid registration rejected by server",
+                 detail="POST returned HTTP {status}. See evidence file.")
 
   // POST 2: HTTP redirect URI for confidential client (MUST violation probe)
   // redirect_uri uses HTTP scheme; host matches client_uri to isolate scheme as the sole variable.
@@ -196,7 +197,8 @@ function probe4(ctx):
 | `info`    | DCR valid registration accepted                                       | POST returned 201 with client_id={id}.                                                                                                                                               |
 | `warn`    | DCR registration response uses HTTP 200 instead of 201               | POST returned 200 with client_id={id}. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.                         |
 | `issue`   | DCR registration returned 200 but response lacks valid client_id      | POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body. Context not populated.                   |
-| `info`    | DCR valid registration not accepted                                   | POST returned HTTP {status}; body: {body_excerpt}.                                                                                                                                   |
+| `issue`   | DCR registration returned 201 but response lacks valid client_id      | POST returned 201 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires a client_id in the response body. Context not populated.                                |
+| `info`    | DCR valid registration rejected by server                             | POST returned HTTP {status}. See evidence file.                                                                                                                                      |
 | `issue`   | DCR accepted HTTP redirect URI for confidential client                | POST returned 201; HTTP redirect URIs must be rejected for confidential clients (RFC 7591 §5 MUST).                                                                                  |
 | `info`    | DCR rejected HTTP redirect URI for confidential client                | POST returned HTTP {status} as expected (RFC 7591 §5).                                                                                                                               |
 | `warn`    | DCR accepted host-mismatched redirect URI                             | POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD reject this (RFC 7591 §5 SHOULD).                                                                       |
@@ -244,8 +246,9 @@ and `client_id_metadata_document_supported=true`. Expected probe 4 output:
 - Finding: "DCR advertised" with `registration_endpoint` URL (info)
 - Finding: one of "DCR valid registration accepted" (info, 201), "DCR registration response
   uses HTTP 200 instead of 201" (warn, 200 + valid body), "DCR registration returned 200
-  but response lacks valid client_id" (issue, 200 + no body), or "DCR valid registration not
-  accepted" (info, other status) depending on the server's behavior
+  but response lacks valid client_id" (issue, 200 + no body), "DCR registration returned 201
+  but response lacks valid client_id" (issue, 201 + no body), or "DCR valid registration
+  rejected by server" (info, other status) depending on the server's behavior
 - Evidence: `04-dcr-register-valid.http`, `04-dcr-register-http-redirect.http`,
   `04-dcr-register-host-mismatch.http` written
 - Finding: "DCR rejected HTTP redirect URI for confidential client" (info) or

@@ -186,11 +186,21 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       ],
       evidence: [EVIDENCE_NAME_VALID]
     });
-  } else {
-    // Catch-all: covers 201 with invalid body AND any non-201/200 status.
+  } else if (attempt1.status === 201) {
     findings.push({
       id: DCR_PROBE_ID,
-      title: 'DCR valid registration not accepted',
+      title: 'DCR registration returned 201 but response lacks valid client_id',
+      severity: 'issue',
+      passed: false,
+      observations: [
+        'POST returned 201 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires a client_id in the response body. Context not populated.'
+      ],
+      evidence: [EVIDENCE_NAME_VALID]
+    });
+  } else {
+    findings.push({
+      id: DCR_PROBE_ID,
+      title: 'DCR valid registration rejected by server',
       severity: 'info',
       passed: false,
       observations: [
