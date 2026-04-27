@@ -113,7 +113,8 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
     title: A1_TITLE,
     severity: a1Passed ? 'info' : 'issue',
     passed: a1Passed,
-    observations: a1Observations
+    observations: a1Observations,
+    evidence: [DISCOVERY_PROBE_STEM]
   };
 
   // --- Assertion 2: PRM advertisement (RFC 9728 §5.1) ---
@@ -133,7 +134,8 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
       title: A2_TITLE,
       severity: 'info',
       passed: true,
-      observations: [`resource_metadata URL: ${prmUrl}`]
+      observations: [`resource_metadata URL: ${prmUrl}`],
+      evidence: [DISCOVERY_PROBE_STEM]
     };
   } else {
     a2Finding = {
@@ -143,7 +145,8 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: false,
       observations: [
         'WWW-Authenticate present but no resource_metadata parameter (RFC 9728 §5.1).'
-      ]
+      ],
+      evidence: [DISCOVERY_PROBE_STEM]
     };
   }
 
@@ -182,7 +185,8 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
         title: A3_TITLE,
         severity: 'warn',
         passed: false,
-        observations: a3Observations
+        observations: a3Observations,
+        evidence: [DISCOVERY_PROBE_STEM]
       };
     } else {
       a3Observations.push(
@@ -193,7 +197,8 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
         title: A3_TITLE,
         severity: 'info',
         passed: true,
-        observations: a3Observations
+        observations: a3Observations,
+        evidence: [DISCOVERY_PROBE_STEM]
       };
     }
   }

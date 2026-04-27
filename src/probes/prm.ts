@@ -166,6 +166,9 @@ async function fetchAndValidate(
     passed: validation.passed,
     observations: validation.observations
   };
+  if (validation.passed) {
+    finding.evidence = [evidenceName];
+  }
 
   const result: ProbeResult = {
     findings: [finding],
@@ -198,6 +201,9 @@ function fallbackSuccess(
     passed: validation.passed,
     observations: validation.observations
   };
+  if (validation.passed) {
+    validationFinding.evidence = [evidenceName];
+  }
 
   const infoFinding: Finding = {
     id: PRM_PROBE_ID,

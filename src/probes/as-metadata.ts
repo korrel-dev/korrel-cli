@@ -192,7 +192,8 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
     title: 'Authorization Server metadata (RFC 8414)',
     severity: passed ? 'info' : 'warn',
     passed,
-    observations
+    observations,
+    evidence: [AS_METADATA_PROBE_ID]
   };
 
   const a5Finding = buildIssuerValidationFinding(metadataParsed, issuerMismatch, returnedIssuer, issuer);
@@ -249,7 +250,8 @@ function buildIssuerValidationFinding(
         `Expected issuer (from well-known URL construction): "${expectedIssuer}"`,
         'RFC 8414 §3.3 MUST: the issuer value in the metadata response MUST be identical to the issuer identifier value used to construct the well-known URI.',
         'RFC 8414 §3.3 MUST NOT: the data contained in this response MUST NOT be used. contextUpdates suppressed; downstream probes will not receive authorization_endpoint, token_endpoint, or registration_endpoint from this response.'
-      ]
+      ],
+      evidence: [AS_METADATA_PROBE_ID]
     };
   }
 
@@ -260,7 +262,8 @@ function buildIssuerValidationFinding(
     passed: true,
     observations: [
       `Returned issuer "${returnedIssuer ?? ''}" matches the expected issuer identifier. RFC 8414 §3.3 MUST satisfied.`
-    ]
+    ],
+    evidence: [AS_METADATA_PROBE_ID]
   };
 }
 
@@ -295,7 +298,8 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
       observations: [
         'code_challenge_methods_supported not present in AS metadata.',
         'RFC 8414 §2: if omitted, the authorization server does not support PKCE.'
-      ]
+      ],
+      evidence: [AS_METADATA_PROBE_ID]
     };
   }
 
@@ -312,7 +316,8 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
       observations: [
         methodsLine,
         'S256 advertised; plain not advertised. RFC 7636 §4.2 MTI baseline satisfied.'
-      ]
+      ],
+      evidence: [AS_METADATA_PROBE_ID]
     };
   }
 
@@ -328,7 +333,8 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
         'No server-directed MUST NOT exists in RFC 7636, RFC 8414 §2, or OAuth 2.1 draft-15 §4.1.1.',
         'RFC 7636 §4.2 designates S256 as MTI on the server and requires clients capable of S256 to use it.',
         'OAuth 2.1 draft-15 §4.1.1 permits plain in AS metadata as a fallback discovery path for clients that cannot support S256.'
-      ]
+      ],
+      evidence: [AS_METADATA_PROBE_ID]
     };
   }
 
@@ -341,7 +347,8 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
     observations: [
       methodsLine,
       'S256 is not advertised. RFC 7636 §4.2 designates S256 as Mandatory To Implement (MTI) on the server. Without S256 in the advertised methods, clients cannot use the MTI baseline regardless of their own capability.'
-    ]
+    ],
+    evidence: [AS_METADATA_PROBE_ID]
   };
 }
 

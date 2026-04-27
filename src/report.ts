@@ -53,12 +53,8 @@ function renderMarkdown({ target, findings, evidenceNames }: ReportInput): strin
       lines.push(`- ${obs}`);
     }
     lines.push('');
-    const relatedEvidence = [...evidenceNames]
-      .filter(name =>
-        name === finding.id
-        || name.startsWith(`${finding.id}-`) // evidence expands within probe (probe 4 case)
-        || finding.id.startsWith(`${name}-`) // finding narrows from probe stem (probe 1 case)
-      )
+    const relatedEvidence = (finding.evidence ?? [])
+      .filter(name => evidenceNames.has(name))
       .sort();
 
     if (relatedEvidence.length > 0) {

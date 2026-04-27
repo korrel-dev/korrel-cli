@@ -159,7 +159,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: true,
       observations: [
         `POST returned 201 with client_id=<redacted>.`
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_VALID]
     });
     contextUpdates = { registeredClient: body1Validated.data };
   } else if (attempt1.status === 200 && body1Validated?.success) {
@@ -170,7 +171,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: false,
       observations: [
         `POST returned 200 with client_id=<redacted>. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.`
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_VALID]
     });
     contextUpdates = { registeredClient: body1Validated.data };
   } else if (attempt1.status === 200) {
@@ -181,7 +183,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: false,
       observations: [
         'POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body. Context not populated.'
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_VALID]
     });
   } else {
     // Catch-all: covers 201 with invalid body AND any non-201/200 status.
@@ -192,7 +195,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: false,
       observations: [
         `POST returned HTTP ${attempt1.status}. See evidence file.`
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_VALID]
     });
   }
 
@@ -218,7 +222,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: false,
       observations: [
         'POST returned 201; HTTP redirect URIs must be rejected for confidential clients (RFC 7591 §5 MUST).'
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_HTTP_REDIRECT]
     });
   } else {
     findings.push({
@@ -228,7 +233,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: true,
       observations: [
         `POST returned HTTP ${attempt2.status} as expected (RFC 7591 §5).`
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_HTTP_REDIRECT]
     });
   }
 
@@ -253,7 +259,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: false,
       observations: [
         'POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD reject this (RFC 7591 §5 SHOULD).'
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_HOST_MISMATCH]
     });
   } else {
     findings.push({
@@ -263,7 +270,8 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
       passed: true,
       observations: [
         `POST returned HTTP ${attempt3.status}. Host mismatch check is enforced.`
-      ]
+      ],
+      evidence: [EVIDENCE_NAME_HOST_MISMATCH]
     });
   }
 

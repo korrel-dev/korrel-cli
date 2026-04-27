@@ -25,6 +25,7 @@ export interface Finding {
   severity: Severity;
   passed: boolean;
   observations: string[];
+  evidence?: string[];
 }
 
 import type { Prm } from './probes/prm.js';
