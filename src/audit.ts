@@ -5,6 +5,7 @@ import { PRM_PROBE_ID, prmProbe } from './probes/prm.js';
 import { AS_METADATA_PROBE_ID, asMetadataProbe } from './probes/as-metadata.js';
 import { DCR_PROBE_ID, dcrProbe } from './probes/dcr.js';
 import { PKCE_PROBE_ID, pkceEnforcementProbe } from './probes/pkce-enforcement.js';
+import { TOKEN_HYGIENE_PROBE_ID, tokenHygieneProbe } from './probes/token-hygiene.js';
 import { writeEvidence } from './evidence.js';
 import { writeReport } from './report.js';
 import type { AuditContext, Finding, Probe } from './types.js';
@@ -19,8 +20,8 @@ const probes: ProbeEntry[] = [
   { id: PRM_PROBE_ID, run: prmProbe },
   { id: AS_METADATA_PROBE_ID, run: asMetadataProbe },
   { id: DCR_PROBE_ID, run: dcrProbe },
-  { id: PKCE_PROBE_ID, run: pkceEnforcementProbe }
-  // Probe 6 lands next.
+  { id: PKCE_PROBE_ID, run: pkceEnforcementProbe },
+  { id: TOKEN_HYGIENE_PROBE_ID, run: tokenHygieneProbe }
 ];
 
 export async function runAudit(target: string, outputRoot: string): Promise<void> {
