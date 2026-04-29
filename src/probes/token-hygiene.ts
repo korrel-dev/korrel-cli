@@ -37,21 +37,21 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
       title: JWKS_URI_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
-      observations: ['AS metadata not available; probe 3 did not populate authorizationServerMetadata.']
+      observations: ['Skipped: probe 3 did not populate authorizationServerMetadata.']
     });
     findings.push({
       id: TOKEN_HYGIENE_REVOCATION_FINDING_ID,
       title: REVOCATION_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
-      observations: ['AS metadata not available.']
+      observations: ['Skipped: AS metadata not available.']
     });
     findings.push({
       id: TOKEN_HYGIENE_INTROSPECTION_FINDING_ID,
       title: INTROSPECTION_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
-      observations: ['AS metadata not available.']
+      observations: ['Skipped: AS metadata not available.']
     });
   } else {
     // AsMetadataSchema uses .passthrough(); jwks_uri / revocation_endpoint /
@@ -146,7 +146,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
       title: BEARER_METHODS_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
-      observations: ['PRM not available; probe 2 did not populate protectedResourceMetadata.']
+      observations: ['Skipped: probe 2 did not populate protectedResourceMetadata.']
     });
   } else {
     // bearer_methods_supported is a named field on PrmSchema, typed
