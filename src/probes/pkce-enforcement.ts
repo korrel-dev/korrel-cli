@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import type { AuditContext, Evidence, Finding, NamedEvidence, ProbeResult } from '../types.js';
 
-export const PKCE_PROBE_ID = '05-pkce-enforcement';
+export const PKCE_PROBE_STEM = '05-pkce-enforcement';
 export const PKCE_NO_CHALLENGE_FINDING_ID = '05-pkce-enforcement-no-challenge';
 export const PKCE_PLAIN_FINDING_ID = '05-pkce-enforcement-plain';
 export const PKCE_STATE_ECHO_FINDING_ID = '05-pkce-enforcement-state-echo';
@@ -68,7 +68,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
   const authzEndpoint = ctx.authorizationEndpoint;
   if (!as || !authzEndpoint) {
     findings.push({
-      id: PKCE_PROBE_ID,
+      id: PKCE_PROBE_STEM,
       title: 'PKCE enforcement probe skipped: AS metadata not available',
       severity: 'skipped',
       passed: false,
@@ -83,7 +83,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
   const clientResult = RegisteredClientSchema.safeParse(ctx.registeredClient);
   if (!clientResult.success) {
     findings.push({
-      id: PKCE_PROBE_ID,
+      id: PKCE_PROBE_STEM,
       title: 'PKCE enforcement probe skipped: no registered client',
       severity: 'skipped',
       passed: false,
@@ -99,7 +99,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
   const pkceMethods = as.code_challenge_methods_supported;
   if (!pkceMethods || pkceMethods.length === 0) {
     findings.push({
-      id: PKCE_PROBE_ID,
+      id: PKCE_PROBE_STEM,
       title: 'PKCE not advertised; enforcement test not applicable',
       severity: 'info',
       passed: false,

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { AuditContext, Evidence, Finding, NamedEvidence, ProbeResult } from '../types.js';
 
-export const PRM_PROBE_ID = '02-prm';
+export const PRM_PROBE_STEM = '02-prm';
 
 /**
  * Protected Resource Metadata, per RFC 9728 §3.
@@ -44,7 +44,7 @@ const RECOMMENDED_FIELDS = [
 export async function prmProbe(ctx: AuditContext): Promise<ProbeResult> {
   const prmUrl = ctx.protectedResourceMetadataUrl;
   if (prmUrl) {
-    return fetchAndValidate(ctx, prmUrl, PRM_PROBE_ID);
+    return fetchAndValidate(ctx, prmUrl, PRM_PROBE_STEM);
   }
 
   return runFallback(ctx);
@@ -160,7 +160,7 @@ async function fetchAndValidate(
   const validation = validatePrmResponse(ctx, attempt);
 
   const finding: Finding = {
-    id: PRM_PROBE_ID,
+    id: PRM_PROBE_STEM,
     title: 'Protected Resource Metadata (RFC 9728)',
     severity: validation.passed ? 'info' : 'warn',
     passed: validation.passed,
@@ -195,7 +195,7 @@ function fallbackSuccess(
   const validation = validatePrmResponse(ctx, attempt);
 
   const validationFinding: Finding = {
-    id: PRM_PROBE_ID,
+    id: PRM_PROBE_STEM,
     title: 'Protected Resource Metadata (RFC 9728)',
     severity: validation.passed ? 'info' : 'warn',
     passed: validation.passed,
@@ -206,7 +206,7 @@ function fallbackSuccess(
   }
 
   const infoFinding: Finding = {
-    id: PRM_PROBE_ID,
+    id: PRM_PROBE_STEM,
     title: 'PRM discovery required well-known URL fallback',
     severity: 'info',
     passed: true,
@@ -260,7 +260,7 @@ function fallbackAllFailed(input: FallbackFailureInput): ProbeResult {
     : `WWW-Authenticate lacks resource_metadata parameter. Well-known URL path-insertion form (${input.pathInsertUrl}) returned ${input.pathInsertStatus}; top-level form (${input.topLevelUrl}) returned ${input.topLevelStatus}. A spec-compliant client cannot complete discovery.`;
 
   const finding: Finding = {
-    id: PRM_PROBE_ID,
+    id: PRM_PROBE_STEM,
     title: 'No RFC 9728 discovery path resolves',
     severity: 'issue',
     passed: false,
