@@ -21,8 +21,17 @@ coverage/
 # Lint cache
 .eslintcache
 
-# Smoke-test artifacts (per project convention)
+# Smoke-test artifacts. The CLI's default output path is audits/<host>/.
+# Smoke runs MUST stay out of commits because they capture live HTTP
+# responses including OAuth credentials returned by /register endpoints
+# (RFC 7591 §3.2). Audit reports for publication live in the separate
+# mcp-audits repo, not here. outputs/ kept for legacy invocations and
+# future tooling that may write there.
+audits/
 outputs/
+
+# Local notes (not committed)
+PRIVATE-NOTES.md
 
 # Environment
 .env
