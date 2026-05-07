@@ -71,13 +71,23 @@ deterministic probe.
   polish, 2026-05-06. Non-blocking but tracked.
 - `04-registration`: bodyExcerpt may leak client_id on
   invalid-response paths. Tracked as #11.
-- `04-pkce` (host-mismatch §5 framing): cites a SHOULD that does
-  not exist in RFC 7591 §5; the §5 MUST about metadata scrutiny is
-  the correct citation. Filed during audit-03 polish, 2026-05-06.
-  Non-blocking but tracked.
 
 Probe-citation correction follow-ups land alongside the next
 methodology amendment in
 [`mcp-audits/METHODOLOGY.md`](https://github.com/korrel-dev/mcp-audits/blob/main/METHODOLOGY.md);
 the audit accuracy pattern locked 2026-05-02 catches future
 miscites at draft-review time before they ship.
+
+## Closed not-a-bug
+
+- `04-registration` (host-mismatch §5 SHOULD framing). Filed
+  2026-05-06 during audit-03 polish on the basis that probe-04's
+  POST 3 cited "RFC 7591 §5 SHOULD" but no such SHOULD existed.
+  Closed 2026-05-07 after a careful read of RFC 7591 §5 paragraph
+  by paragraph: §5 Para 6 contains a direct SHOULD covering the
+  exact check the probe performs. The probe citation is correct.
+  Audit-02 and audit-03 prose has been amended to match (see
+  `mcp-audits` commits 0401d933 and cccf901e). Lesson: when
+  reviewing an RFC section, read every paragraph; "logo /
+  redirect_uris" sits in §5 Para 5, "client_uri / redirect_uris"
+  sits in §5 Para 6, and the May 6 review only saw the first.
