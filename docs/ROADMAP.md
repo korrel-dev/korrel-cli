@@ -13,15 +13,39 @@ step it implements.
 | 2 | `02-prm` | §2 AS metadata (PRM half) | RFC 9728 §3 | Implemented |
 | 3 | `03-as-metadata` | §2 AS metadata (AS half) | RFC 8414 | Implemented |
 | 4 | `04-registration` | §3 Client registration | RFC 7591, MCP CIMD (spec 2025-11-25) | Implemented |
-| 5 | `05-pkce` | §4 PKCE enforcement | RFC 7636 | Pending |
-| 6 | `06-tokens` | §5 Token hygiene | RFC 8707, RFC 6750 | Pending |
-| 7 | `07-ancillary` | §6 Ancillary controls | transport, CSRF, security headers | Pending |
+| 5 | `05-pkce` | §4 PKCE enforcement | RFC 7636 | Implemented |
+| 6 | `06-tokens` | §5-6 Token hygiene + ancillary | RFC 8707, RFC 6750, RFC 6749 §10.12 | Implemented |
+
+Methodology v1.0 closed 2026-04-29 with six probes covering the
+authorization surface end-to-end. Probe count reflects the
+methodology's surface decomposition; future methodology versions
+may add or split probes.
 
 Methodology §2 splits into two probes (`02-prm` and
 `03-as-metadata`) because each emits its own evidence file and the
 failure modes are distinct: a server can ship RFC 9728 PRM and
-still fail RFC 8414 AS metadata, or vice versa. Probes 4-7 may
-split similarly when they land.
+still fail RFC 8414 AS metadata, or vice versa.
+
+Methodology §5 (token hygiene) and §6 (ancillary controls) collapse
+into a single probe (`06-tokens`) at v1.0 because the observable
+surface is shared (token endpoint metadata, audience claim semantics,
+state echo, HTTPS scheme). Future methodology versions may split
+when ancillary controls grow beyond what one probe can cover.
+
+## Future probes
+
+Methodology v2.0 (planned) expands into:
+
+- Tool authorization scope checking (per-tool ACL granularity).
+- Prompt-injection signature detection at the protocol layer.
+- Agent-vs-user identity binding (CIMD lineage, agent attestation).
+- Session lifecycle and concurrent-session policies.
+- Consent screen behavior on dynamic scope grants.
+- Audit log integrity verification at the AS level.
+
+No timeline for v2.0; it lands when at least three of these surfaces
+have enough adoption in published MCP servers to warrant a
+deterministic probe.
 
 ## Legend
 
@@ -42,5 +66,18 @@ split similarly when they land.
   notes the others.
 - `02-prm`: explicit check that the PRM document is served with
   `Content-Type: application/json` (RFC 9728 §3).
+- `02-prm`: cites RFC 9728 §3 for fields defined in §2, and treats
+  three OPTIONAL fields as RECOMMENDED. Filed during audit-03
+  polish, 2026-05-06. Non-blocking but tracked.
 - `04-registration`: bodyExcerpt may leak client_id on
   invalid-response paths. Tracked as #11.
+- `04-pkce` (host-mismatch §5 framing): cites a SHOULD that does
+  not exist in RFC 7591 §5; the §5 MUST about metadata scrutiny is
+  the correct citation. Filed during audit-03 polish, 2026-05-06.
+  Non-blocking but tracked.
+
+Probe-citation correction follow-ups land alongside the next
+methodology amendment in
+[`mcp-audits/METHODOLOGY.md`](https://github.com/korrel-dev/mcp-audits/blob/main/METHODOLOGY.md);
+the audit accuracy pattern locked 2026-05-02 catches future
+miscites at draft-review time before they ship.
