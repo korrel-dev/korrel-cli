@@ -1,0 +1,28 @@
+# Spec-correct line-ending behavior for this repository.
+#
+# Asserts LF normalization regardless of the contributor's local
+# core.autocrlf setting (Git for Windows defaults to autocrlf=true,
+# which silently converts LF blobs to CRLF in the working tree on
+# checkout). This file makes the line-ending contract explicit.
+#
+# Reference: https://git-scm.com/docs/gitattributes
+
+# Default: auto-detect text files, normalize to LF on commit and in
+# the working tree.
+* text=auto eol=lf
+
+# Common binary types (no normalization, no diff).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
