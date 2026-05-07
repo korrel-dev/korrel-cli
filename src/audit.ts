@@ -1,27 +1,27 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { DISCOVERY_PROBE_STEM, discoveryProbe } from './probes/discovery.js';
-import { PRM_PROBE_ID, prmProbe } from './probes/prm.js';
-import { AS_METADATA_PROBE_ID, asMetadataProbe } from './probes/as-metadata.js';
-import { DCR_PROBE_ID, dcrProbe } from './probes/dcr.js';
-import { PKCE_PROBE_ID, pkceEnforcementProbe } from './probes/pkce-enforcement.js';
-import { TOKEN_HYGIENE_PROBE_ID, tokenHygieneProbe } from './probes/token-hygiene.js';
+import { PRM_PROBE_STEM, prmProbe } from './probes/prm.js';
+import { AS_METADATA_PROBE_STEM, asMetadataProbe } from './probes/as-metadata.js';
+import { DCR_PROBE_STEM, dcrProbe } from './probes/dcr.js';
+import { PKCE_PROBE_STEM, pkceEnforcementProbe } from './probes/pkce-enforcement.js';
+import { TOKEN_HYGIENE_PROBE_STEM, tokenHygieneProbe } from './probes/token-hygiene.js';
 import { writeEvidence } from './evidence.js';
 import { writeReport } from './report.js';
 import type { AuditContext, Finding, Probe } from './types.js';
 
 interface ProbeEntry {
-  id: string;
+  stem: string;
   run: Probe;
 }
 
 const probes: ProbeEntry[] = [
-  { id: DISCOVERY_PROBE_STEM, run: discoveryProbe },
-  { id: PRM_PROBE_ID, run: prmProbe },
-  { id: AS_METADATA_PROBE_ID, run: asMetadataProbe },
-  { id: DCR_PROBE_ID, run: dcrProbe },
-  { id: PKCE_PROBE_ID, run: pkceEnforcementProbe },
-  { id: TOKEN_HYGIENE_PROBE_ID, run: tokenHygieneProbe }
+  { stem: DISCOVERY_PROBE_STEM, run: discoveryProbe },
+  { stem: PRM_PROBE_STEM, run: prmProbe },
+  { stem: AS_METADATA_PROBE_STEM, run: asMetadataProbe },
+  { stem: DCR_PROBE_STEM, run: dcrProbe },
+  { stem: PKCE_PROBE_STEM, run: pkceEnforcementProbe },
+  { stem: TOKEN_HYGIENE_PROBE_STEM, run: tokenHygieneProbe }
 ];
 
 export async function runAudit(target: string, outputRoot: string): Promise<void> {
@@ -55,8 +55,8 @@ export async function runAudit(target: string, outputRoot: string): Promise<void
       // the audit continues. No probe can halt the run.
       const message = err instanceof Error ? err.message : String(err);
       findings.push({
-        id: probe.id,
-        title: `${probe.id} threw`,
+        id: probe.stem,
+        title: `${probe.stem} threw`,
         severity: 'issue',
         passed: false,
         observations: [message]

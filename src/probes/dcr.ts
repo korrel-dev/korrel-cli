@@ -7,7 +7,7 @@ import type {
   ProbeResult
 } from '../types.js';
 
-export const DCR_PROBE_ID = '04-dcr';
+export const DCR_PROBE_STEM = '04-dcr';
 
 const EVIDENCE_NAME_VALID = '04-dcr-register-valid';
 const EVIDENCE_NAME_HTTP_REDIRECT = '04-dcr-register-http-redirect';
@@ -55,7 +55,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   const as = ctx.authorizationServerMetadata;
   if (!as) {
     const skipFinding: Finding = {
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR/CIMD probe skipped: AS metadata not available',
       severity: 'skipped',
       passed: false,
@@ -74,7 +74,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   const cimdSupported = cimdSupportedRaw === true;
   if (cimdSupported) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'CIMD advertised',
       severity: 'info',
       passed: true,
@@ -84,7 +84,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   } else {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'CIMD not advertised',
       severity: 'info',
       passed: false,
@@ -98,7 +98,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   const registrationEndpoint = as.registration_endpoint;
   if (!registrationEndpoint) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR not advertised',
       severity: 'info',
       passed: false,
@@ -111,7 +111,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (!registrationEndpoint.startsWith('https://')) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR endpoint not TLS-protected',
       severity: 'issue',
       passed: false,
@@ -122,7 +122,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   }
 
   findings.push({
-    id: DCR_PROBE_ID,
+    id: DCR_PROBE_STEM,
     title: 'DCR advertised',
     severity: 'info',
     passed: true,
@@ -153,7 +153,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (attempt1.status === 201 && body1Validated?.success) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR valid registration accepted',
       severity: 'info',
       passed: true,
@@ -165,7 +165,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     contextUpdates = { registeredClient: body1Validated.data };
   } else if (attempt1.status === 200 && body1Validated?.success) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR registration response uses HTTP 200 instead of 201',
       severity: 'warn',
       passed: false,
@@ -177,7 +177,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     contextUpdates = { registeredClient: body1Validated.data };
   } else if (attempt1.status === 200) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR registration returned 200 but response lacks valid client_id',
       severity: 'issue',
       passed: false,
@@ -188,7 +188,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   } else if (attempt1.status === 201) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR registration returned 201 but response lacks valid client_id',
       severity: 'issue',
       passed: false,
@@ -199,7 +199,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   } else {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR valid registration rejected by server',
       severity: 'info',
       passed: false,
@@ -226,7 +226,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (attempt2.status === 201) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR accepted HTTP redirect URI for confidential client',
       severity: 'issue',
       passed: false,
@@ -237,7 +237,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   } else {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR rejected HTTP redirect URI for confidential client',
       severity: 'info',
       passed: true,
@@ -263,7 +263,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (attempt3.status === 201) {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR accepted host-mismatched redirect URI',
       severity: 'warn',
       passed: false,
@@ -274,7 +274,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   } else {
     findings.push({
-      id: DCR_PROBE_ID,
+      id: DCR_PROBE_STEM,
       title: 'DCR rejected host-mismatched redirect URI',
       severity: 'info',
       passed: true,

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { AuditContext, Evidence, Finding, ProbeResult } from '../types.js';
 
-export const AS_METADATA_PROBE_ID = '03-as-metadata';
+export const AS_METADATA_PROBE_STEM = '03-as-metadata';
 export const AS_METADATA_ISSUER_VALIDATION_FINDING_ID = '03-as-metadata-issuer-validation';
 export const AS_METADATA_PKCE_METHODS_FINDING_ID = '03-as-metadata-pkce-methods';
 export const AS_METADATA_MULTI_AS_FINDING_ID = '03-as-metadata-multi-as';
@@ -46,7 +46,7 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   const servers = ctx.authorizationServers;
   if (!servers || servers.length === 0) {
     const finding: Finding = {
-      id: AS_METADATA_PROBE_ID,
+      id: AS_METADATA_PROBE_STEM,
       title: 'Authorization Server metadata (RFC 8414)',
       severity: 'skipped',
       passed: false,
@@ -186,12 +186,12 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   }
 
   const finding: Finding = {
-    id: AS_METADATA_PROBE_ID,
+    id: AS_METADATA_PROBE_STEM,
     title: 'Authorization Server metadata (RFC 8414)',
     severity: passed ? 'info' : 'warn',
     passed,
     observations,
-    evidence: [AS_METADATA_PROBE_ID]
+    evidence: [AS_METADATA_PROBE_STEM]
   };
 
   const a5Finding = buildIssuerValidationFinding(metadataParsed, issuerMismatch, returnedIssuer, issuer);
@@ -207,13 +207,13 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
       observations: [
         `AS metadata lists ${servers.length} authorization_servers entries. Probe 3 v0 audits only the first (${servers[0]}). Remaining: ${servers.slice(1).join(', ')}. Multi-AS coverage is planned for a future probe revision.`
       ],
-      evidence: [AS_METADATA_PROBE_ID]
+      evidence: [AS_METADATA_PROBE_STEM]
     });
   }
 
   const result: ProbeResult = {
     findings,
-    evidence: [{ name: AS_METADATA_PROBE_ID, evidence }]
+    evidence: [{ name: AS_METADATA_PROBE_STEM, evidence }]
   };
   if (contextUpdates) {
     result.contextUpdates = contextUpdates;
@@ -263,7 +263,7 @@ function buildIssuerValidationFinding(
         'RFC 8414 §3.3 MUST: the issuer value in the metadata response MUST be identical to the issuer identifier value used to construct the well-known URI.',
         'RFC 8414 §3.3 MUST NOT: the data contained in this response MUST NOT be used. contextUpdates suppressed; downstream probes will not receive authorization_endpoint, token_endpoint, or registration_endpoint from this response.'
       ],
-      evidence: [AS_METADATA_PROBE_ID]
+      evidence: [AS_METADATA_PROBE_STEM]
     };
   }
 
@@ -275,7 +275,7 @@ function buildIssuerValidationFinding(
     observations: [
       `Returned issuer "${returnedIssuer ?? ''}" matches the expected issuer identifier. RFC 8414 §3.3 MUST satisfied.`
     ],
-    evidence: [AS_METADATA_PROBE_ID]
+    evidence: [AS_METADATA_PROBE_STEM]
   };
 }
 
@@ -311,7 +311,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
         'code_challenge_methods_supported not present in AS metadata.',
         'RFC 8414 §2: if omitted, the authorization server does not support PKCE.'
       ],
-      evidence: [AS_METADATA_PROBE_ID]
+      evidence: [AS_METADATA_PROBE_STEM]
     };
   }
 
@@ -329,7 +329,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
         methodsLine,
         'S256 advertised; plain not advertised. RFC 7636 §4.2 MTI baseline satisfied.'
       ],
-      evidence: [AS_METADATA_PROBE_ID]
+      evidence: [AS_METADATA_PROBE_STEM]
     };
   }
 
@@ -346,7 +346,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
         'RFC 7636 §4.2 designates S256 as MTI on the server and requires clients capable of S256 to use it.',
         'OAuth 2.1 draft-15 §4.1.1 permits plain in AS metadata as a fallback discovery path for clients that cannot support S256.'
       ],
-      evidence: [AS_METADATA_PROBE_ID]
+      evidence: [AS_METADATA_PROBE_STEM]
     };
   }
 
@@ -360,7 +360,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
       methodsLine,
       'S256 is not advertised. RFC 7636 §4.2 designates S256 as Mandatory To Implement (MTI) on the server. Without S256 in the advertised methods, clients cannot use the MTI baseline regardless of their own capability.'
     ],
-    evidence: [AS_METADATA_PROBE_ID]
+    evidence: [AS_METADATA_PROBE_STEM]
   };
 }
 

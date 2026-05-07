@@ -1,6 +1,6 @@
 import type { AuditContext, Finding, ProbeResult } from '../types.js';
 
-export const TOKEN_HYGIENE_PROBE_ID = '06-token-hygiene';
+export const TOKEN_HYGIENE_PROBE_STEM = '06-token-hygiene';
 export const TOKEN_HYGIENE_JWKS_URI_FINDING_ID = '06-token-hygiene-jwks-uri';
 export const TOKEN_HYGIENE_REVOCATION_FINDING_ID = '06-token-hygiene-revocation-endpoint';
 export const TOKEN_HYGIENE_INTROSPECTION_FINDING_ID = '06-token-hygiene-introspection-endpoint';
