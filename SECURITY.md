@@ -55,10 +55,10 @@ observation cites an RFC clause the spec does not contain. The
 audit accuracy pattern in
 [`METHODOLOGY.md`](https://github.com/korrel-dev/mcp-audits/blob/main/METHODOLOGY.md)
 catches most of these in audit prose review, but the probe code
-itself is the source. Two examples found via the audit-03 polish
-pass on 2026-05-06 are tracked in
-[issue #24](https://github.com/korrel-dev/korrel-cli/issues/24)
-and [issue #25](https://github.com/korrel-dev/korrel-cli/issues/25).
+itself is the source. Live probe-citation follow-ups, plus a
+"Closed not-a-bug" section recording reviews where the original
+filing was in error, are tracked in
+[`docs/ROADMAP.md`](./docs/ROADMAP.md#follow-ups-tracked-against-shipped-probes).
 
 ## What is not a security issue
 
