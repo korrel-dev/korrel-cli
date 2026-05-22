@@ -219,7 +219,8 @@ export interface WwwAuthChallenge {
 }
 
 /**
- * Parse a single Bearer WWW-Authenticate challenge per RFC 7235 §2.1.
+ * Parse a single Bearer WWW-Authenticate challenge per RFC 9110 §11.1
+ * (Challenge and Response; RFC 7235 was obsoleted by RFC 9110).
  *
  * Handles token and quoted-string param values, quoted-pair escaping,
  * and optional whitespace around "=" and ",". Multi-challenge responses
