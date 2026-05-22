@@ -20,7 +20,7 @@ export interface Evidence {
 export type Severity = 'info' | 'warn' | 'issue' | 'critical' | 'skipped';
 
 export interface Finding {
-  id: string;
+  stem: string;
   title: string;
   severity: Severity;
   passed: boolean;

@@ -33,21 +33,21 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
   const as = ctx.authorizationServerMetadata;
   if (!as) {
     findings.push({
-      id: TOKEN_HYGIENE_JWKS_URI_FINDING_ID,
+      stem: TOKEN_HYGIENE_JWKS_URI_FINDING_ID,
       title: JWKS_URI_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
       observations: ['Skipped: probe 3 did not populate authorizationServerMetadata.']
     });
     findings.push({
-      id: TOKEN_HYGIENE_REVOCATION_FINDING_ID,
+      stem: TOKEN_HYGIENE_REVOCATION_FINDING_ID,
       title: REVOCATION_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
       observations: ['Skipped: AS metadata not available.']
     });
     findings.push({
-      id: TOKEN_HYGIENE_INTROSPECTION_FINDING_ID,
+      stem: TOKEN_HYGIENE_INTROSPECTION_FINDING_ID,
       title: INTROSPECTION_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
@@ -64,7 +64,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
     // --- B1: jwks_uri ---
     if (typeof jwksUri === 'string') {
       findings.push({
-        id: TOKEN_HYGIENE_JWKS_URI_FINDING_ID,
+        stem: TOKEN_HYGIENE_JWKS_URI_FINDING_ID,
         title: 'JWKS URI advertised',
         severity: 'info',
         passed: true,
@@ -75,7 +75,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
       });
     } else {
       findings.push({
-        id: TOKEN_HYGIENE_JWKS_URI_FINDING_ID,
+        stem: TOKEN_HYGIENE_JWKS_URI_FINDING_ID,
         title: 'JWKS URI not advertised',
         severity: 'info',
         passed: false,
@@ -89,7 +89,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
     // --- B2: revocation_endpoint ---
     if (typeof revocationEndpoint === 'string') {
       findings.push({
-        id: TOKEN_HYGIENE_REVOCATION_FINDING_ID,
+        stem: TOKEN_HYGIENE_REVOCATION_FINDING_ID,
         title: 'Revocation endpoint advertised (RFC 7009)',
         severity: 'info',
         passed: true,
@@ -100,7 +100,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
       });
     } else {
       findings.push({
-        id: TOKEN_HYGIENE_REVOCATION_FINDING_ID,
+        stem: TOKEN_HYGIENE_REVOCATION_FINDING_ID,
         title: 'Revocation endpoint not advertised (RFC 7009)',
         severity: 'warn',
         passed: false,
@@ -115,7 +115,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
     // --- B3: introspection_endpoint ---
     if (typeof introspectionEndpoint === 'string') {
       findings.push({
-        id: TOKEN_HYGIENE_INTROSPECTION_FINDING_ID,
+        stem: TOKEN_HYGIENE_INTROSPECTION_FINDING_ID,
         title: 'Introspection endpoint advertised (RFC 7662)',
         severity: 'info',
         passed: true,
@@ -126,7 +126,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
       });
     } else {
       findings.push({
-        id: TOKEN_HYGIENE_INTROSPECTION_FINDING_ID,
+        stem: TOKEN_HYGIENE_INTROSPECTION_FINDING_ID,
         title: 'Introspection endpoint not advertised (RFC 7662)',
         severity: 'info',
         passed: false,
@@ -142,7 +142,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
   const prm = ctx.protectedResourceMetadata;
   if (!prm) {
     findings.push({
-      id: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
+      stem: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
       title: BEARER_METHODS_TITLE_SKIPPED,
       severity: 'skipped',
       passed: false,
@@ -155,7 +155,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
 
     if (methods === undefined) {
       findings.push({
-        id: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
+        stem: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
         title: 'bearer_methods_supported not advertised',
         severity: 'info',
         passed: false,
@@ -172,7 +172,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
 
       if (hasQuery) {
         findings.push({
-          id: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
+          stem: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
           title: 'bearer_methods_supported includes query',
           severity: 'warn',
           passed: false,
@@ -184,7 +184,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
         });
       } else if (hasForm) {
         findings.push({
-          id: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
+          stem: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
           title: 'bearer_methods_supported includes form but not query',
           severity: 'info',
           passed: false,
@@ -195,7 +195,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
         });
       } else {
         findings.push({
-          id: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
+          stem: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
           title: 'bearer_methods_supported restricts to header only',
           severity: 'info',
           passed: true,
@@ -210,7 +210,7 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
 
   // --- Deferral finding (always emitted) ---
   findings.push({
-    id: TOKEN_HYGIENE_LIVE_TOKEN_DEFERRED_FINDING_ID,
+    stem: TOKEN_HYGIENE_LIVE_TOKEN_DEFERRED_FINDING_ID,
     title: 'Live-token hygiene tests deferred to future probe',
     severity: 'skipped',
     passed: false,

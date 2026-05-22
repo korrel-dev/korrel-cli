@@ -46,7 +46,7 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   const servers = ctx.authorizationServers;
   if (!servers || servers.length === 0) {
     const finding: Finding = {
-      id: AS_METADATA_PROBE_STEM,
+      stem: AS_METADATA_PROBE_STEM,
       title: 'Authorization Server metadata (RFC 8414)',
       severity: 'skipped',
       passed: false,
@@ -58,14 +58,14 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
     // the post-fetch path.
     const zeroAsSkipObservation = 'Skipped: probe 2 did not discover any authorization_servers.';
     const a5Finding: Finding = {
-      id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+      stem: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
       title: A5_TITLE,
       severity: 'skipped',
       passed: false,
       observations: [zeroAsSkipObservation]
     };
     const a4Finding: Finding = {
-      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      stem: AS_METADATA_PKCE_METHODS_FINDING_ID,
       title: A4_TITLE,
       severity: 'skipped',
       passed: false,
@@ -186,7 +186,7 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   }
 
   const finding: Finding = {
-    id: AS_METADATA_PROBE_STEM,
+    stem: AS_METADATA_PROBE_STEM,
     title: 'Authorization Server metadata (RFC 8414)',
     severity: passed ? 'info' : 'warn',
     passed,
@@ -200,7 +200,7 @@ export async function asMetadataProbe(ctx: AuditContext): Promise<ProbeResult> {
   const findings: Finding[] = [finding, a5Finding, a4Finding];
   if (servers.length > 1) {
     findings.push({
-      id: AS_METADATA_MULTI_AS_FINDING_ID,
+      stem: AS_METADATA_MULTI_AS_FINDING_ID,
       title: 'Multi-AS configuration not fully audited',
       severity: 'info',
       passed: false,
@@ -243,7 +243,7 @@ function buildIssuerValidationFinding(
 ): Finding {
   if (!metadataParsed) {
     return {
-      id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+      stem: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
       title: A5_TITLE,
       severity: 'skipped',
       passed: false,
@@ -253,7 +253,7 @@ function buildIssuerValidationFinding(
 
   if (issuerMismatch) {
     return {
-      id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+      stem: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
       title: A5_TITLE,
       severity: 'issue',
       passed: false,
@@ -268,7 +268,7 @@ function buildIssuerValidationFinding(
   }
 
   return {
-    id: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
+    stem: AS_METADATA_ISSUER_VALIDATION_FINDING_ID,
     title: A5_TITLE,
     severity: 'info',
     passed: true,
@@ -293,7 +293,7 @@ function buildIssuerValidationFinding(
 function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undefined): Finding {
   if (!metadataParsed) {
     return {
-      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      stem: AS_METADATA_PKCE_METHODS_FINDING_ID,
       title: A4_TITLE,
       severity: 'skipped',
       passed: false,
@@ -303,7 +303,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
 
   if (pkce === undefined) {
     return {
-      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      stem: AS_METADATA_PKCE_METHODS_FINDING_ID,
       title: A4_TITLE,
       severity: 'info',
       passed: false,
@@ -321,7 +321,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
 
   if (hasS256 && !hasPlain) {
     return {
-      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      stem: AS_METADATA_PKCE_METHODS_FINDING_ID,
       title: A4_TITLE,
       severity: 'info',
       passed: true,
@@ -335,7 +335,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
 
   if (hasS256 && hasPlain) {
     return {
-      id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+      stem: AS_METADATA_PKCE_METHODS_FINDING_ID,
       title: A4_TITLE,
       severity: 'warn',
       passed: false,
@@ -352,7 +352,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
 
   // pkce present but does not include 'S256' (may include 'plain' or other values).
   return {
-    id: AS_METADATA_PKCE_METHODS_FINDING_ID,
+    stem: AS_METADATA_PKCE_METHODS_FINDING_ID,
     title: A4_TITLE,
     severity: 'issue',
     passed: false,

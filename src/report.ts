@@ -45,7 +45,7 @@ function renderMarkdown({ target, findings, evidenceNames }: ReportInput): strin
   lines.push('');
 
   for (const finding of findings) {
-    lines.push(`### ${finding.id}: ${finding.title}`);
+    lines.push(`### ${finding.stem}: ${finding.title}`);
     lines.push('');
     lines.push(`**Result:** ${finding.passed ? 'passed' : finding.severity}`);
     lines.push('');

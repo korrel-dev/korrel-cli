@@ -68,7 +68,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
   const authzEndpoint = ctx.authorizationEndpoint;
   if (!as || !authzEndpoint) {
     findings.push({
-      id: PKCE_PROBE_STEM,
+      stem: PKCE_PROBE_STEM,
       title: 'PKCE enforcement probe skipped: AS metadata not available',
       severity: 'skipped',
       passed: false,
@@ -83,7 +83,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
   const clientResult = RegisteredClientSchema.safeParse(ctx.registeredClient);
   if (!clientResult.success) {
     findings.push({
-      id: PKCE_PROBE_STEM,
+      stem: PKCE_PROBE_STEM,
       title: 'PKCE enforcement probe skipped: no registered client',
       severity: 'skipped',
       passed: false,
@@ -99,7 +99,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
   const pkceMethods = as.code_challenge_methods_supported;
   if (!pkceMethods || pkceMethods.length === 0) {
     findings.push({
-      id: PKCE_PROBE_STEM,
+      stem: PKCE_PROBE_STEM,
       title: 'PKCE not advertised; enforcement test not applicable',
       severity: 'info',
       passed: false,
@@ -141,7 +141,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
   // --- Test 2: code_challenge_method=plain (skipped when plain advertised) ---
   if (pkceMethods.includes('plain')) {
     findings.push({
-      id: PKCE_PLAIN_FINDING_ID,
+      stem: PKCE_PLAIN_FINDING_ID,
       title: 'Plain method enforcement test skipped: plain is advertised',
       severity: 'skipped',
       passed: false,
@@ -176,7 +176,7 @@ export async function pkceEnforcementProbe(ctx: AuditContext): Promise<ProbeResu
 
   // Verifier-mismatch deferral (always emitted when probe ran tests).
   findings.push({
-    id: PKCE_VERIFIER_MISMATCH_FINDING_ID,
+    stem: PKCE_VERIFIER_MISMATCH_FINDING_ID,
     title: 'Verifier-mismatch test deferred to future probe',
     severity: 'skipped',
     passed: false,
@@ -256,7 +256,7 @@ function classifyAndEmit(
 
       if (error) {
         findings.push({
-          id: params.primaryFindingId,
+          stem: params.primaryFindingId,
           title: `Authorization endpoint rejected ${params.primaryFindingTitleSubject}`,
           severity: 'info',
           passed: true,
@@ -267,7 +267,7 @@ function classifyAndEmit(
         });
       } else if (code) {
         findings.push({
-          id: params.primaryFindingId,
+          stem: params.primaryFindingId,
           title: params.codeIssuedTitle,
           severity: 'issue',
           passed: false,
@@ -278,7 +278,7 @@ function classifyAndEmit(
         });
       } else {
         findings.push({
-          id: params.primaryFindingId,
+          stem: params.primaryFindingId,
           title: 'Authorization endpoint redirected to redirect_uri without code or error',
           severity: 'warn',
           passed: false,
@@ -293,7 +293,7 @@ function classifyAndEmit(
       const echoedState = query.get('state');
       if (echoedState !== sentState) {
         findings.push({
-          id: PKCE_STATE_ECHO_FINDING_ID,
+          stem: PKCE_STATE_ECHO_FINDING_ID,
           title: 'Authorization endpoint did not echo state parameter correctly',
           severity: 'warn',
           passed: false,
@@ -308,7 +308,7 @@ function classifyAndEmit(
 
     // Off-host redirect (consent/login page).
     findings.push({
-      id: params.primaryFindingId,
+      stem: params.primaryFindingId,
       title: `PKCE enforcement could not be confirmed for ${params.primaryFindingTitleSubject}`,
       severity: 'warn',
       passed: false,
@@ -322,7 +322,7 @@ function classifyAndEmit(
 
   if (result.status === 200 || result.status === 401 || result.status === 403) {
     findings.push({
-      id: params.primaryFindingId,
+      stem: params.primaryFindingId,
       title: `PKCE enforcement could not be confirmed for ${params.primaryFindingTitleSubject}`,
       severity: 'warn',
       passed: false,
@@ -337,7 +337,7 @@ function classifyAndEmit(
   if (result.status === 400 || result.status === 422) {
     if (bodyMentionsPkce(result.body)) {
       findings.push({
-        id: params.primaryFindingId,
+        stem: params.primaryFindingId,
         title: `Authorization endpoint rejected ${params.primaryFindingTitleSubject} with HTTP ${result.status}`,
         severity: 'info',
         passed: true,
@@ -348,7 +348,7 @@ function classifyAndEmit(
       });
     } else {
       findings.push({
-        id: params.primaryFindingId,
+        stem: params.primaryFindingId,
         title: `Authorization endpoint returned HTTP ${result.status} for ${params.primaryFindingTitleSubject}`,
         severity: 'warn',
         passed: false,
@@ -362,7 +362,7 @@ function classifyAndEmit(
   }
 
   findings.push({
-    id: params.primaryFindingId,
+    stem: params.primaryFindingId,
     title: `Authorization endpoint returned unexpected response for ${params.primaryFindingTitleSubject}`,
     severity: 'warn',
     passed: false,

@@ -4,18 +4,20 @@ import type { AuditContext, Evidence, Finding, NamedEvidence, ProbeResult } from
 export const PRM_PROBE_STEM = '02-prm';
 
 /**
- * Protected Resource Metadata, per RFC 9728 §3.
+ * Protected Resource Metadata, per RFC 9728 §2.
  *
- * Required: resource, authorization_servers.
- * Recommended: scopes_supported, bearer_methods_supported,
- * resource_documentation, resource_signing_alg_values_supported.
+ * Required: resource.
+ * Recommended: scopes_supported.
+ * Optional: authorization_servers, bearer_methods_supported,
+ * resource_documentation, resource_signing_alg_values_supported,
+ * jwks_uri, and others.
  *
- * Passthrough: RFC 9728 §3 permits extension fields; the schema
+ * Passthrough: RFC 9728 §2 permits additional parameters; the schema
  * must not reject unknown keys.
  */
 export const PrmSchema = z.object({
   resource: z.string().url(),
-  authorization_servers: z.array(z.string().url()).min(1),
+  authorization_servers: z.array(z.string().url()).min(1).optional(),
   scopes_supported: z.array(z.string()).optional(),
   bearer_methods_supported: z.array(z.string()).optional(),
   resource_documentation: z.string().url().optional(),
@@ -24,22 +26,23 @@ export const PrmSchema = z.object({
 
 export type Prm = z.infer<typeof PrmSchema>;
 
-const RECOMMENDED_FIELDS = [
-  'scopes_supported',
-  'bearer_methods_supported',
-  'resource_documentation',
-  'resource_signing_alg_values_supported'
-] as const;
+const RECOMMENDED_FIELDS = ['scopes_supported'] as const;
 
 /**
  * Probe 2: Protected Resource Metadata fetch and validation (RFC 9728).
  *
  * When probe 1 extracted `resource_metadata` from WWW-Authenticate, fetch
  * that URL directly. When that parameter is absent (see MCP 2025-11-25
- * §2.3.1 SHOULD), derive the well-known URL per RFC 9728 §3.1: try the
- * path-insertion form first, then the top-level form. Emit an info-finding
- * when fallback resolves the document, or an issue-finding when neither
- * derived form returns 2xx.
+ * §2.3.1 SHOULD), derive the well-known URL per RFC 9728 §3.1. §3.1
+ * selects the form by whether the resource identifier has a path or query
+ * component. With a path or query, the well-known suffix is inserted
+ * between the host and the path (any terminating slash after the host
+ * removed first); without one, the suffix sits at the top level. The
+ * probe queries the path-insertion form, the §3.1 location for a resource
+ * with a path, and only if that does not resolve additionally tries the
+ * top-level form to locate metadata published at the non-mandated
+ * location. Emits an info-finding when fallback resolves the document, or
+ * an issue-finding when neither derived form returns 2xx.
  */
 export async function prmProbe(ctx: AuditContext): Promise<ProbeResult> {
   const prmUrl = ctx.protectedResourceMetadataUrl;
@@ -53,9 +56,15 @@ export async function prmProbe(ctx: AuditContext): Promise<ProbeResult> {
 /**
  * RFC 9728 §3.1 fallback when WWW-Authenticate lacked resource_metadata.
  *
- * Probes path-insertion form first, top-level form second. When the target
- * has no path component both forms collapse to the same URL and only one
- * request is made.
+ * §3.1 selects the well-known URL form by whether the resource identifier
+ * has a path or query component. With a path or query, the suffix is
+ * inserted between host and the remaining path (any terminating slash
+ * after the host removed first); without one, the suffix sits at the top
+ * level. The probe queries the path-insertion form, the §3.1 location for
+ * a resource with a path, and only if that does not resolve additionally
+ * tries the top-level form to locate metadata published at the
+ * non-mandated location. When the target has no path component both forms
+ * collapse to the same URL and only one request is made.
  */
 async function runFallback(ctx: AuditContext): Promise<ProbeResult> {
   const { pathInsert, topLevel } = wellKnownUrls(ctx.target);
@@ -160,7 +169,7 @@ async function fetchAndValidate(
   const validation = validatePrmResponse(ctx, attempt);
 
   const finding: Finding = {
-    id: PRM_PROBE_STEM,
+    stem: PRM_PROBE_STEM,
     title: 'Protected Resource Metadata (RFC 9728)',
     severity: validation.passed ? 'info' : 'warn',
     passed: validation.passed,
@@ -195,7 +204,7 @@ function fallbackSuccess(
   const validation = validatePrmResponse(ctx, attempt);
 
   const validationFinding: Finding = {
-    id: PRM_PROBE_STEM,
+    stem: PRM_PROBE_STEM,
     title: 'Protected Resource Metadata (RFC 9728)',
     severity: validation.passed ? 'info' : 'warn',
     passed: validation.passed,
@@ -206,7 +215,7 @@ function fallbackSuccess(
   }
 
   const infoFinding: Finding = {
-    id: PRM_PROBE_STEM,
+    stem: PRM_PROBE_STEM,
     title: 'PRM discovery required well-known URL fallback',
     severity: 'info',
     passed: true,
@@ -260,7 +269,7 @@ function fallbackAllFailed(input: FallbackFailureInput): ProbeResult {
     : `WWW-Authenticate lacks resource_metadata parameter. Well-known URL path-insertion form (${input.pathInsertUrl}) returned ${input.pathInsertStatus}; top-level form (${input.topLevelUrl}) returned ${input.topLevelStatus}. A spec-compliant client cannot complete discovery.`;
 
   const finding: Finding = {
-    id: PRM_PROBE_STEM,
+    stem: PRM_PROBE_STEM,
     title: 'No RFC 9728 discovery path resolves',
     severity: 'issue',
     passed: false,
@@ -282,7 +291,7 @@ interface ValidationOutcome {
 }
 
 /**
- * Runs the existing zod schema + RFC 9728 §3 RECOMMENDED-field and §3.3
+ * Runs the existing zod schema + RFC 9728 §2 RECOMMENDED-field and §3.3
  * scope checks against a fetched PRM response. Behavior is unchanged from
  * the pre-fallback implementation; extracted so both the direct-URL and
  * fallback paths share the same validation.
@@ -312,14 +321,16 @@ function validatePrmResponse(ctx: AuditContext, attempt: FetchAttempt): Validati
   if (!parseResult.success) {
     for (const issue of parseResult.error.issues) {
       const path = issue.path.length > 0 ? issue.path.join('.') : '(root)';
-      observations.push(`PRM schema: ${path}: ${issue.message} (RFC 9728 §3)`);
+      observations.push(`PRM schema: ${path}: ${issue.message} (RFC 9728 §2)`);
     }
     return { passed, observations };
   }
 
   const prm = parseResult.data;
   observations.push(`resource: ${prm.resource}`);
-  observations.push(`authorization_servers: ${prm.authorization_servers.join(', ')}`);
+  if (prm.authorization_servers !== undefined) {
+    observations.push(`authorization_servers: ${prm.authorization_servers.join(', ')}`);
+  }
 
   const resourceUrl = safeUrl(prm.resource);
   const originMatch = resourceUrl !== null && resourceUrl.origin === ctx.target.origin;
@@ -334,15 +345,17 @@ function validatePrmResponse(ctx: AuditContext, attempt: FetchAttempt): Validati
 
   for (const field of RECOMMENDED_FIELDS) {
     if (prm[field] === undefined) {
-      observations.push(`RFC 9728 §3 recommends "${field}"; not present.`);
+      observations.push(`RFC 9728 §2 recommends "${field}"; not present.`);
     }
   }
 
   passed = originMatch && pathMatch;
   contextUpdates = {
-    protectedResourceMetadata: prm,
-    authorizationServers: prm.authorization_servers
+    protectedResourceMetadata: prm
   };
+  if (prm.authorization_servers !== undefined) {
+    contextUpdates.authorizationServers = prm.authorization_servers;
+  }
 
   return { passed, observations, contextUpdates };
 }

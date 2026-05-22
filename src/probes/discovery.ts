@@ -109,7 +109,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   }
 
   const a1Finding: Finding = {
-    id: A1_FINDING_ID,
+    stem: A1_FINDING_ID,
     title: A1_TITLE,
     severity: a1Passed ? 'info' : 'issue',
     passed: a1Passed,
@@ -122,7 +122,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   let a2Finding: Finding;
   if (!a1Passed) {
     a2Finding = {
-      id: A2_FINDING_ID,
+      stem: A2_FINDING_ID,
       title: A2_TITLE,
       severity: 'skipped',
       passed: false,
@@ -130,7 +130,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
     };
   } else if (prmUrl !== null) {
     a2Finding = {
-      id: A2_FINDING_ID,
+      stem: A2_FINDING_ID,
       title: A2_TITLE,
       severity: 'info',
       passed: true,
@@ -139,7 +139,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
     };
   } else {
     a2Finding = {
-      id: A2_FINDING_ID,
+      stem: A2_FINDING_ID,
       title: A2_TITLE,
       severity: 'warn',
       passed: false,
@@ -155,7 +155,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
   let a3Finding: Finding;
   if (!a1Passed || challenge === null || wwwAuth === null) {
     a3Finding = {
-      id: A3_FINDING_ID,
+      stem: A3_FINDING_ID,
       title: A3_TITLE,
       severity: 'skipped',
       passed: false,
@@ -181,7 +181,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
         );
       }
       a3Finding = {
-        id: A3_FINDING_ID,
+        stem: A3_FINDING_ID,
         title: A3_TITLE,
         severity: 'warn',
         passed: false,
@@ -193,7 +193,7 @@ export async function discoveryProbe(ctx: AuditContext): Promise<ProbeResult> {
         'No error, error_description, or error_uri parameter present.'
       );
       a3Finding = {
-        id: A3_FINDING_ID,
+        stem: A3_FINDING_ID,
         title: A3_TITLE,
         severity: 'info',
         passed: true,

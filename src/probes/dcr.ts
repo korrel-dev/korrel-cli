@@ -43,7 +43,8 @@ interface DcrRegistrationPayload {
  *
  * Methodology step 3 (client registration surface). Covers:
  *   (a) Presence/TLS of `registration_endpoint` (RFC 7591 §3).
- *   (b) Active redirect-URI validation via three POSTs (RFC 7591 §5).
+ *   (b) Active redirect-URI validation via three POSTs (RFC 7591 §5
+ *       host-match SHOULD; OAuth 2.1 §1.5 https MUST).
  *   (c) Passive CIMD flag advertisement
  *       (draft-ietf-oauth-client-id-metadata-document-01 §5).
  *
@@ -55,7 +56,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   const as = ctx.authorizationServerMetadata;
   if (!as) {
     const skipFinding: Finding = {
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR/CIMD probe skipped: AS metadata not available',
       severity: 'skipped',
       passed: false,
@@ -74,7 +75,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   const cimdSupported = cimdSupportedRaw === true;
   if (cimdSupported) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'CIMD advertised',
       severity: 'info',
       passed: true,
@@ -84,7 +85,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   } else {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'CIMD not advertised',
       severity: 'info',
       passed: false,
@@ -98,7 +99,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   const registrationEndpoint = as.registration_endpoint;
   if (!registrationEndpoint) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR not advertised',
       severity: 'info',
       passed: false,
@@ -111,7 +112,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (!registrationEndpoint.startsWith('https://')) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR endpoint not TLS-protected',
       severity: 'issue',
       passed: false,
@@ -122,7 +123,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
   }
 
   findings.push({
-    id: DCR_PROBE_STEM,
+    stem: DCR_PROBE_STEM,
     title: 'DCR advertised',
     severity: 'info',
     passed: true,
@@ -153,7 +154,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (attempt1.status === 201 && body1Validated?.success) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR valid registration accepted',
       severity: 'info',
       passed: true,
@@ -165,30 +166,30 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     contextUpdates = { registeredClient: body1Validated.data };
   } else if (attempt1.status === 200 && body1Validated?.success) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR registration response uses HTTP 200 instead of 201',
       severity: 'warn',
       passed: false,
       observations: [
-        `POST returned 200 with client_id=<redacted>. RFC 7591 §3.2.1 MUST requires HTTP 201 for successful registration. Context populated; downstream probes may proceed.`
+        `POST returned 200 with client_id=<redacted>. RFC 7591 §3.2 specifies HTTP 201 for a successful registration. Context populated; downstream probes may proceed.`
       ],
       evidence: [EVIDENCE_NAME_VALID]
     });
     contextUpdates = { registeredClient: body1Validated.data };
   } else if (attempt1.status === 200) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR registration returned 200 but response lacks valid client_id',
       severity: 'issue',
       passed: false,
       observations: [
-        'POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2.1 MUST requires HTTP 201 and a client_id in the response body. Context not populated.'
+        'POST returned 200 but body does not contain a valid client_id. RFC 7591 §3.2 specifies HTTP 201 for a successful registration, and §3.2.1 requires a client_id in the response body. Context not populated.'
       ],
       evidence: [EVIDENCE_NAME_VALID]
     });
   } else if (attempt1.status === 201) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR registration returned 201 but response lacks valid client_id',
       severity: 'issue',
       passed: false,
@@ -199,7 +200,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   } else {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR valid registration rejected by server',
       severity: 'info',
       passed: false,
@@ -210,7 +211,7 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
     });
   }
 
-  // POST 2: HTTP redirect URI for confidential client (MUST violation probe).
+  // POST 2: non-loopback HTTP redirect URI (OAuth 2.1 §1.5 MUST violation).
   // redirect_uri uses HTTP scheme; host matches client_uri so the scheme is
   // the sole isolated variable.
   const payload2: DcrRegistrationPayload = {
@@ -226,23 +227,23 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (attempt2.status === 201) {
     findings.push({
-      id: DCR_PROBE_STEM,
-      title: 'DCR accepted HTTP redirect URI for confidential client',
+      stem: DCR_PROBE_STEM,
+      title: 'DCR accepted non-loopback HTTP redirect URI',
       severity: 'issue',
       passed: false,
       observations: [
-        'POST returned 201; HTTP redirect URIs must be rejected for confidential clients (RFC 7591 §5 MUST).'
+        'POST returned 201; non-loopback HTTP redirect URIs must be rejected (OAuth 2.1 §1.5 MUST). The https requirement applies to all redirect-based clients; the client_secret_basic client here only isolates the scheme as the single variable.'
       ],
       evidence: [EVIDENCE_NAME_HTTP_REDIRECT]
     });
   } else {
     findings.push({
-      id: DCR_PROBE_STEM,
-      title: 'DCR rejected HTTP redirect URI for confidential client',
+      stem: DCR_PROBE_STEM,
+      title: 'DCR rejected non-loopback HTTP redirect URI',
       severity: 'info',
       passed: true,
       observations: [
-        `POST returned HTTP ${attempt2.status} as expected (RFC 7591 §5).`
+        `POST returned HTTP ${attempt2.status} as expected (OAuth 2.1 §1.5).`
       ],
       evidence: [EVIDENCE_NAME_HTTP_REDIRECT]
     });
@@ -263,18 +264,18 @@ export async function dcrProbe(ctx: AuditContext): Promise<ProbeResult> {
 
   if (attempt3.status === 201) {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR accepted host-mismatched redirect URI',
       severity: 'warn',
       passed: false,
       observations: [
-        'POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD reject this (RFC 7591 §5 SHOULD).'
+        'POST returned 201; redirect_uri host differs from client_uri host. AS SHOULD check this; §5 frames it as a host and scheme check that may lead to refusal, not a mandated rejection (RFC 7591 §5 SHOULD).'
       ],
       evidence: [EVIDENCE_NAME_HOST_MISMATCH]
     });
   } else {
     findings.push({
-      id: DCR_PROBE_STEM,
+      stem: DCR_PROBE_STEM,
       title: 'DCR rejected host-mismatched redirect URI',
       severity: 'info',
       passed: true,

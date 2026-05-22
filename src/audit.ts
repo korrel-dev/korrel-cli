@@ -55,7 +55,7 @@ export async function runAudit(target: string, outputRoot: string): Promise<void
       // the audit continues. No probe can halt the run.
       const message = err instanceof Error ? err.message : String(err);
       findings.push({
-        id: probe.stem,
+        stem: probe.stem,
         title: `${probe.stem} threw`,
         severity: 'issue',
         passed: false,
