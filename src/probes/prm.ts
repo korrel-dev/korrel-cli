@@ -32,8 +32,10 @@ const RECOMMENDED_FIELDS = ['scopes_supported'] as const;
  * Probe 2: Protected Resource Metadata fetch and validation (RFC 9728).
  *
  * When probe 1 extracted `resource_metadata` from WWW-Authenticate, fetch
- * that URL directly. When that parameter is absent (see MCP 2025-11-25
- * §2.3.1 SHOULD), derive the well-known URL per RFC 9728 §3.1. §3.1
+ * that URL directly. When that parameter is absent, the server relies on
+ * the well-known URI discovery mechanism (MCP 2025-11-25, Protected
+ * Resource Metadata Discovery Requirements); derive the well-known URL
+ * per RFC 9728 §3.1. §3.1
  * selects the form by whether the resource identifier has a path or query
  * component. With a path or query, the well-known suffix is inserted
  * between the host and the path (any terminating slash after the host
@@ -220,7 +222,7 @@ function fallbackSuccess(
     severity: 'info',
     passed: true,
     observations: [
-      `WWW-Authenticate did not include resource_metadata parameter. PRM resolved at ${url}. MCP spec 2025-11-25 §2.3.1 recommends (SHOULD) that servers include resource_metadata on 401/403 responses.`
+      `WWW-Authenticate did not include resource_metadata; the PRM resolved at ${url} via the well-known URI. MCP 2025-11-25 (Protected Resource Metadata Discovery Requirements) lets a server satisfy discovery with either the resource_metadata parameter in the WWW-Authenticate header on a 401 (RFC 9728 §5.1) or the well-known URI. This server used the well-known URI, so discovery succeeds; advertising resource_metadata in the challenge would save clients the fallback request.`
     ]
   };
 

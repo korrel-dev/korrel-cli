@@ -309,7 +309,7 @@ function buildPkceMethodsFinding(metadataParsed: boolean, pkce: string[] | undef
       passed: false,
       observations: [
         'code_challenge_methods_supported not present in AS metadata.',
-        'RFC 8414 §2: if omitted, the authorization server does not support PKCE.'
+        'Absent code_challenge_methods_supported is treated as no PKCE support (OAuth 2.1 §4.1.1; MCP 2025-11-25 requires clients to refuse to proceed when it is absent).'
       ],
       evidence: [AS_METADATA_PROBE_STEM]
     };

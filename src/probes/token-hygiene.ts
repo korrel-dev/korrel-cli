@@ -10,7 +10,7 @@ export const TOKEN_HYGIENE_LIVE_TOKEN_DEFERRED_FINDING_ID = '06-token-hygiene-li
 const JWKS_URI_TITLE_SKIPPED = 'JWKS URI advertisement (RFC 8414 §2)';
 const REVOCATION_TITLE_SKIPPED = 'Revocation endpoint advertisement (RFC 7009)';
 const INTROSPECTION_TITLE_SKIPPED = 'Introspection endpoint advertisement (RFC 7662)';
-const BEARER_METHODS_TITLE_SKIPPED = 'Bearer methods advertisement (RFC 6750 §2.3)';
+const BEARER_METHODS_TITLE_SKIPPED = 'Bearer methods advertisement (RFC 9728 §2)';
 
 /**
  * Probe 6: token-hygiene metadata signals.
@@ -161,14 +161,14 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
         passed: false,
         observations: [
           'bearer_methods_supported absent from PRM.',
-          'RFC 6750 default allows all three bearer methods (header, query, form).',
+          'The three RFC 6750 bearer methods are header (§2.1), body (§2.2), and query (§2.3); with bearer_methods_supported absent (RFC 9728 §2), none is explicitly excluded.',
           'No explicit restriction; URL-borne token risk cannot be ruled out from metadata alone.'
         ]
       });
     } else {
       const joined = methods.join(', ');
       const hasQuery = methods.includes('query');
-      const hasForm = methods.includes('form');
+      const hasBody = methods.includes('body');
 
       if (hasQuery) {
         findings.push({
@@ -182,15 +182,15 @@ export async function tokenHygieneProbe(ctx: AuditContext): Promise<ProbeResult>
             'RFC 6750 §5.3 advises against URL query string bearer tokens.'
           ]
         });
-      } else if (hasForm) {
+      } else if (hasBody) {
         findings.push({
           stem: TOKEN_HYGIENE_BEARER_METHODS_FINDING_ID,
-          title: 'bearer_methods_supported includes form but not query',
+          title: 'bearer_methods_supported includes body but not query',
           severity: 'info',
           passed: false,
           observations: [
             `bearer_methods_supported: [${joined}]`,
-            'form method accepted. Lower risk than query; not logged in access logs by default.'
+            'body method accepted. Lower risk than query; not logged in access logs by default.'
           ]
         });
       } else {
