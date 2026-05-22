@@ -20,7 +20,7 @@ const BEARER_METHODS_TITLE_SKIPPED = 'Bearer methods advertisement (RFC 9728 §2
  * access token, which a headless CLI cannot obtain. Probe 6 therefore
  * restricts itself to four assertions (B1-B4) about field presence and
  * advertised values in already-fetched AS metadata (RFC 8414 §2) and PRM
- * (RFC 9728 §3), plus an always-emitted deferral finding documenting the
+ * (RFC 9728 §2), plus an always-emitted deferral finding documenting the
  * live-token gap. Mirrors the verifier-mismatch deferral in probe 5.
  *
  * No network requests. No evidence files. No contextUpdates. Always emits
