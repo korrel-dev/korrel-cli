@@ -77,7 +77,7 @@ filing was in error, are tracked in
 
 ## How to disclose
 
-Email `security@korrel.dev` with:
+Email `founder@korrel.dev` with:
 
 - The category from the list above.
 - The probe (1-6 per `METHODOLOGY.md`) and the source file path
@@ -132,7 +132,7 @@ covers the audit content and evidence files.
 - Issues in the [Model Context Protocol](https://github.com/modelcontextprotocol)
   specification. Disclose to the spec maintainers.
 - Issues in [korrel.dev](https://korrel.dev) (the company website)
-  or the Korrel managed cloud. Email `security@korrel.dev` with
+  or the Korrel managed cloud. Email `founder@korrel.dev` with
   the product name in the subject line.
 
 ## Hall of fame
