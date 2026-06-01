@@ -272,7 +272,14 @@ function consumeParam(input: string): { key: string; value: string; rest: string
     value = v;
     r = r.slice(i);
   } else {
-    const tokenMatch = /^[A-Za-z0-9!#$%&'*+.^_`|~\/\-=]+/.exec(r);
+    // RFC 9110 §5.6.2 token grammar excludes ":" "/" "?" "=" (delimiters), so an
+    // unquoted URL is non-conformant: RFC 9728 §5.1 resource_metadata URLs are
+    // meant to be sent as a quoted-string. Some servers emit the URL unquoted,
+    // so this branch leniently accepts URL-structural delimiters to capture the
+    // whole value. "/" and "=" were already accepted; ":" and "?" are added so
+    // "https://host/path?x=y" no longer truncates at the scheme colon to "https".
+    // Do not narrow this back to strict tchar.
+    const tokenMatch = /^[A-Za-z0-9!#$%&'*+.^_`|~:?\/\-=]+/.exec(r);
     if (!tokenMatch) return null;
     value = tokenMatch[0];
     r = r.slice(tokenMatch[0].length);

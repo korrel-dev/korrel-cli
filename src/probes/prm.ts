@@ -49,6 +49,22 @@ const RECOMMENDED_FIELDS = ['scopes_supported'] as const;
 export async function prmProbe(ctx: AuditContext): Promise<ProbeResult> {
   const prmUrl = ctx.protectedResourceMetadataUrl;
   if (prmUrl) {
+    // A malformed advertised value (e.g. a non-absolute URL) must not crash the
+    // audit: fetch() throws synchronously on an unparseable URL and nothing here
+    // catches it. Record a finding and fall back to well-known discovery instead.
+    if (safeUrl(prmUrl) === null) {
+      const fallback = await runFallback(ctx);
+      const malformed: Finding = {
+        stem: PRM_PROBE_STEM,
+        title: 'WWW-Authenticate resource_metadata is not an absolute URL (RFC 9728 §5.1)',
+        severity: 'warn',
+        passed: false,
+        observations: [
+          `WWW-Authenticate advertised resource_metadata="${prmUrl}", which does not parse as an absolute URL and cannot be dereferenced (RFC 9728 §5.1). Fell back to well-known discovery.`
+        ]
+      };
+      return { ...fallback, findings: [malformed, ...fallback.findings] };
+    }
     return fetchAndValidate(ctx, prmUrl, PRM_PROBE_STEM);
   }
 
