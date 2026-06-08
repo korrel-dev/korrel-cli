@@ -24,28 +24,6 @@ Findings render with five severity levels:
 A target with only `info` findings is clean on the probed surface;
 `issue` findings drive coordinated disclosure to the target operator.
 
-## Why this exists
-
-`korrel-cli` produces the evidence for a public audit series at
-[`korrel-dev/mcp-audits`](https://github.com/korrel-dev/mcp-audits).
-Each audit follows the same pattern: run the probes, draft findings
-against the methodology, disclose privately to the target operator,
-publish the report after a coordinated disclosure window.
-
-Audits published so far:
-
-- [GitHub Copilot MCP](https://github.com/korrel-dev/mcp-audits/tree/main/audits/github)
-  (2026-04-27)
-- [Linear MCP](https://github.com/korrel-dev/mcp-audits/tree/main/audits/linear)
-  (2026-05-04)
-- Supabase MCP (2026-05-11)
-
-The methodology that drives the probes is versioned at
-[`mcp-audits/METHODOLOGY.md`](https://github.com/korrel-dev/mcp-audits/blob/main/METHODOLOGY.md).
-Methodology v1.0 closed on 2026-04-29; v2.0 expands into tool
-authorization, prompt-injection signatures, agent-vs-user identity,
-session lifecycle, consent, and audit integrity.
-
 ## Probes
 
 | # | ID | Methodology § | RFCs | Status |
